@@ -45,8 +45,7 @@ def dV_dsigma(S_0,K,sigma,tau,r):
     # Parameters and the value of Vega
 
     d2   = (np.log(S_0 / float(K)) + (r - 0.5 * np.power(sigma,2.0)) * tau) / float(sigma * np.sqrt(tau))
-    value = K * np.exp(-r * tau) * st.norm.pdf(d2) * np.sqrt(tau)
-    return value
+    return K * np.exp(-r * tau) * st.norm.pdf(d2) * np.sqrt(tau)
 
 def BS_Call_Option_Price(CP,S_0,K,sigma,tau,r):
 
@@ -54,9 +53,9 @@ def BS_Call_Option_Price(CP,S_0,K,sigma,tau,r):
 
     d1    = (np.log(S_0 / float(K)) + (r + 0.5 * np.power(sigma,2.0)) * tau) / float(sigma * np.sqrt(tau))
     d2    = d1 - sigma * np.sqrt(tau)
-    if str(CP).lower()=="c" or str(CP).lower()=="1":
+    if str(CP).lower() in {"c", "1"}:
         value = st.norm.cdf(d1) * S_0 - st.norm.cdf(d2) * K * np.exp(-r * tau)
-    elif str(CP).lower()=="p" or str(CP).lower()=="-1":
+    elif str(CP).lower() in {"p", "-1"}:
         value = st.norm.cdf(-d2) * K * np.exp(-r * tau) - st.norm.cdf(-d1)*S_0
     return value
 

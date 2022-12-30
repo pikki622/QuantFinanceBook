@@ -14,18 +14,18 @@ def GeneratePathsMerton(NoOfPaths,NoOfSteps,S0, T,xiP,muJ,sigmaJ,r,sigma):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     S = np.zeros([NoOfPaths, NoOfSteps+1])
     time = np.zeros([NoOfSteps+1])
-                
+
     dt = T / float(NoOfSteps)
     X[:,0] = np.log(S0)
     S[:,0] = S0
-    
+
     # Expectation E(e^J) for J~N(muJ,sigmaJ^2)
 
     EeJ = np.exp(muJ + 0.5*sigmaJ*sigmaJ)
     ZPois = np.random.poisson(xiP*dt,[NoOfPaths,NoOfSteps])
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     J = np.random.normal(muJ,sigmaJ,[NoOfPaths,NoOfSteps])
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -37,10 +37,9 @@ def GeneratePathsMerton(NoOfPaths,NoOfSteps,S0, T,xiP,muJ,sigmaJ,r,sigma):
         X[:,i+1]  = X[:,i] + (r - xiP*(EeJ-1) - 0.5*sigma*sigma)*dt +sigma*np.sqrt(dt)* Z[:,i]\
                     + J[:,i] * ZPois[:,i]
         time[i+1] = time[i] +dt
-        
+
     S = np.exp(X)
-    paths = {"time":time,"X":X,"S":S}
-    return paths
+    return {"time":time,"X":X,"S":S}
 
 def GeneratePathsPoisson(NoOfPaths,NoOfSteps,T,xiP):    
 
@@ -49,20 +48,19 @@ def GeneratePathsPoisson(NoOfPaths,NoOfSteps,T,xiP):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     Xc = np.zeros([NoOfPaths, NoOfSteps+1])
     time = np.zeros([NoOfSteps+1])
-                
+
     dt = T / float(NoOfSteps)
-    
+
     Z = np.random.poisson(xiP*dt,[NoOfPaths,NoOfSteps])
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         X[:,i+1]  = X[:,i] + Z[:,i]
         Xc[:,i+1] = Xc[:,i] -xiP*dt + Z[:,i]
         time[i+1] = time[i] +dt
-        
-    paths = {"time":time,"X":X,"Xcomp":Xc}
-    return paths
+
+    return {"time":time,"X":X,"Xcomp":Xc}
 
 def mainCalculation():
     NoOfPaths = 25

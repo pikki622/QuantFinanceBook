@@ -70,16 +70,13 @@ def CallPutOptionPriceCOSMthd(cf,CP,S0,r,tau,K,N,L):
 # Determine coefficients for put prices 
 
 def CallPutCoefficients(CP,a,b,k):
-    if CP==OptionType.CALL:                  
+    if CP==OptionType.CALL:              
         c = 0.0
         d = b
         coef = Chi_Psi(a,b,c,d,k)
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
-        if a < b and b < 0.0:
-            H_k = np.zeros([len(k),1])
-        else:
-            H_k      = 2.0 / (b - a) * (Chi_k - Psi_k)  
+        H_k = np.zeros([len(k),1]) if a < b < 0.0 else 2.0 / (b - a) * (Chi_k - Psi_k)
     elif CP==OptionType.PUT:
         c = a
         d = 0.0
@@ -87,24 +84,23 @@ def CallPutCoefficients(CP,a,b,k):
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
         H_k      = 2.0 / (b - a) * (- Chi_k + Psi_k)               
-    
+
     return H_k    
 
 def Chi_Psi(a,b,c,d,k):
     psi = np.sin(k * np.pi * (d - a) / (b - a)) - np.sin(k * np.pi * (c - a)/(b - a))
     psi[1:] = psi[1:] * (b - a) / (k[1:] * np.pi)
     psi[0] = d - c
-    
-    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0)) 
+
+    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0))
     expr1 = np.cos(k * np.pi * (d - a)/(b - a)) * np.exp(d)  - np.cos(k * np.pi 
                   * (c - a) / (b - a)) * np.exp(c)
     expr2 = k * np.pi / (b - a) * np.sin(k * np.pi * 
                         (d - a) / (b - a))   - k * np.pi / (b - a) * np.sin(k 
                         * np.pi * (c - a) / (b - a)) * np.exp(c)
     chi = chi * (expr1 + expr2)
-    
-    value = {"chi":chi,"psi":psi }
-    return value
+
+    return {"chi":chi,"psi":psi }
     
 # Black-Scholes call option price
 
@@ -124,16 +120,16 @@ def BS_Call_Option_Price(CP,S_0,K,sigma,tau,r):
 
 def ImpliedVolatility(CP,marketPrice,K,T,S_0,r):
     func = lambda sigma: np.power(BS_Call_Option_Price(CP,S_0,K,sigma,T,r) - marketPrice, 1.0)
-    impliedVol = optimize.newton(func, 0.7, tol=1e-5)
-    #impliedVol = optimize.brent(func, brack= (0.05, 2))
-    return impliedVol
+    return optimize.newton(func, 0.7, tol=1e-5)
 
 def ChFCGMY(r,tau,S0,C,G,M,Y,sigma):
     i = np.complex(0.0,1.0)
     varPhi = lambda u: np.exp(tau * C *stFunc.gamma(-Y)*( np.power(M-i*u,Y) - np.power(M,Y) + np.power(G+i*u,Y) - np.power(G,Y)))
     omega =  -1/tau * np.log(varPhi(-i))
-    cF = lambda u: varPhi(u) * np.exp(i*u* (r+ omega -0.5*sigma*sigma)*tau - 0.5*sigma*sigma *u *u *tau)  
-    return cF 
+    return lambda u: varPhi(u) * np.exp(
+        i * u * (r + omega - 0.5 * sigma * sigma) * tau
+        - 0.5 * sigma * sigma * u * u * tau
+    ) 
 
 def mainCalculation():
     CP  = OptionType.CALL   

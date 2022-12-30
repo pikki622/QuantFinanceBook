@@ -27,43 +27,39 @@ def CallPutOptionPriceCOSMthd(cf,CP,S0,r,tau,K,N,L):
     # K    - list of strikes
     # N    - Number of expansion terms
     # L    - size of truncation domain (typ.:L=8 or L=10)  
-        
+
     # reshape K to a column vector
     if K is not np.array:
         K = np.array(K).reshape([len(K),1])
-    
+
     #assigning i=sqrt(-1)
-    i = np.complex(0.0,1.0) 
+    i = np.complex(0.0,1.0)
     x0 = np.log(S0 / K)   
-    
+
     # truncation domain
     a = 0.0 - L * np.sqrt(tau)
     b = 0.0 + L * np.sqrt(tau)
-    
+
     # sumation from k = 0 to k=N-1
-    k = np.linspace(0,N-1,N).reshape([N,1])  
+    k = np.linspace(0,N-1,N).reshape([N,1])
     u = k * np.pi / (b - a);  
 
     # Determine coefficients for Put Prices  
-    H_k = CallPutCoefficients(CP,a,b,k)   
+    H_k = CallPutCoefficients(CP,a,b,k)
     mat = np.exp(i * np.outer((x0 - a) , u))
-    temp = cf(u) * H_k 
-    temp[0] = 0.5 * temp[0]    
-    value = np.exp(-r * tau) * K * np.real(mat.dot(temp))     
-    return value
+    temp = cf(u) * H_k
+    temp[0] = 0.5 * temp[0]
+    return np.exp(-r * tau) * K * np.real(mat.dot(temp))
 
 # Determine coefficients for Put Prices 
 def CallPutCoefficients(CP,a,b,k):
-    if CP==OptionType.CALL:                  
+    if CP==OptionType.CALL:              
         c = 0.0
         d = b
         coef = Chi_Psi(a,b,c,d,k)
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
-        if a < b and b < 0.0:
-            H_k = np.zeros([len(k),1])
-        else:
-            H_k      = 2.0 / (b - a) * (Chi_k - Psi_k)  
+        H_k = np.zeros([len(k),1]) if a < b < 0.0 else 2.0 / (b - a) * (Chi_k - Psi_k)
     elif CP==OptionType.PUT:
         c = a
         d = 0.0
@@ -71,24 +67,23 @@ def CallPutCoefficients(CP,a,b,k):
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
         H_k      = 2.0 / (b - a) * (- Chi_k + Psi_k)               
-    
+
     return H_k    
 
 def Chi_Psi(a,b,c,d,k):
     psi = np.sin(k * np.pi * (d - a) / (b - a)) - np.sin(k * np.pi * (c - a)/(b - a))
     psi[1:] = psi[1:] * (b - a) / (k[1:] * np.pi)
     psi[0] = d - c
-    
-    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0)) 
+
+    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0))
     expr1 = np.cos(k * np.pi * (d - a)/(b - a)) * np.exp(d)  - np.cos(k * np.pi 
                   * (c - a) / (b - a)) * np.exp(c)
     expr2 = k * np.pi / (b - a) * np.sin(k * np.pi * 
                         (d - a) / (b - a))   - k * np.pi / (b - a) * np.sin(k 
                         * np.pi * (c - a) / (b - a)) * np.exp(c)
     chi = chi * (expr1 + expr2)
-    
-    value = {"chi":chi,"psi":psi }
-    return value
+
+    return {"chi":chi,"psi":psi }
 
 def ChFHestonModel(r,tau,kappa,gamma,vbar,v0,rho):
     i = np.complex(0.0,1.0)
@@ -98,30 +93,28 @@ def ChFHestonModel(r,tau,kappa,gamma,vbar,v0,rho):
     # Note that we exclude the term -r*tau, as the discounting is performed in the COS method
     A  = lambda u: r * i*u *tau + kappa*vbar*tau/gamma/gamma *(kappa-gamma*rho*i*u-D1(u))\
         - 2*kappa*vbar/gamma/gamma*np.log((1-g(u)*np.exp(-D1(u)*tau))/(1-g(u)))
-    # Characteristic function for the Heston's model    
-    cf = lambda u: np.exp(A(u) + C(u)*v0)
-    return cf 
+    return lambda u: np.exp(A(u) + C(u)*v0) 
 
-def  Carr_Madan_Call(ChF,T,K,x0):
+def Carr_Madan_Call(ChF,T,K,x0):
     # Make sure that we don't evaluate at 0
     #K(K<1e-5)=1e-5
-    
-    alpha   = 0.75 
+
+    alpha   = 0.75
     c       = 300.0
     N_CM    = int(np.power(2.0,12))
-    
+
     eta    = c/N_CM
     b      = np.pi/eta
     u      = np.linspace(0,N_CM-1,N_CM)*eta #[0:N_CM-1]*eta
     lambd  = 2.0*np.pi/(N_CM*eta)
     i      = np.complex(0,1)
-    
+
     u_new = u-(alpha+1.0)*i #European call option.
-    
+
     cf    = np.exp(i*u_new*x0)*ChF(u_new)
     psi   = cf/(alpha**2.0+alpha-u**2.0+i*(2.0*alpha+1.0)*u)
-    
-    hlp = np.zeros([int(N_CM)])
+
+    hlp = np.zeros([N_CM])
     hlp[0] =1
     SimpsonW         = 3.0+np.power(-1,np.linspace(1,N_CM,N_CM))-hlp
     SimpsonW[N_CM-1] = 0.0
@@ -131,17 +124,14 @@ def  Carr_Madan_Call(ChF,T,K,x0):
     strike           = np.exp(np.linspace(-b,b,N_CM)-lambd)
     payoff_interpol  = CubicSpline(strike,payoff,bc_type='clamped')
     payoff_specific  = payoff_interpol(K)
-    
-    value = np.exp(-np.log(K)*alpha)*payoff_specific/np.pi
-    
-    return value
+
+    return np.exp(-np.log(K)*alpha)*payoff_specific/np.pi
 
 def CIR_Sample(NoOfPaths,kappa,gamma,vbar,s,t,v_s):
     delta = 4.0 *kappa*vbar/gamma/gamma
     c= 1.0/(4.0*kappa)*gamma*gamma*(1.0-np.exp(-kappa*(t-s)))
     kappaBar = 4.0*kappa*v_s*np.exp(-kappa*(t-s))/(gamma*gamma*(1.0-np.exp(-kappa*(t-s))))
-    sample = c* np.random.noncentral_chisquare(delta,kappaBar,NoOfPaths)
-    return  sample
+    return c* np.random.noncentral_chisquare(delta,kappaBar,NoOfPaths)
 
 def getEVBinMethod(S,v,NoOfBins):
     if (NoOfBins != 1):

@@ -30,67 +30,62 @@ def CallPutOptionPriceCOSMthd(cf,CP,S0,r,tau,K,N,L):
 
     if K is not np.array:
         K = np.array(K).reshape([len(K),1])
-    
+
     # Assigning i=sqrt(-1)
 
-    i = np.complex(0.0,1.0) 
+    i = np.complex(0.0,1.0)
     x0 = np.log(S0 / K)   
-    
+
     # Truncation domain
 
     a = 0.0 - L * np.sqrt(tau)
     b = 0.0 + L * np.sqrt(tau)
-    
+
     # Summation from k = 0 to k=N-1
 
-    k = np.linspace(0,N-1,N).reshape([N,1])  
+    k = np.linspace(0,N-1,N).reshape([N,1])
     u = k * np.pi / (b - a);  
 
     # Determine coefficients for put prices  
 
-    H_k = CallPutCoefficients(CP,a,b,k)   
+    H_k = CallPutCoefficients(CP,a,b,k)
     mat = np.exp(i * np.outer((x0 - a) , u))
-    temp = cf(u) * H_k 
-    temp[0] = 0.5 * temp[0]    
-    value = np.exp(-r * tau) * K * np.real(mat.dot(temp))     
-    return value
+    temp = cf(u) * H_k
+    temp[0] = 0.5 * temp[0]
+    return np.exp(-r * tau) * K * np.real(mat.dot(temp))
 
 def Chi_Psi(a,b,c,d,k):
     psi = np.sin(k * np.pi * (d - a) / (b - a)) - np.sin(k * np.pi * (c - a)/(b - a))
     psi[1:] = psi[1:] * (b - a) / (k[1:] * np.pi)
     psi[0] = d - c
-    
-    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0)) 
+
+    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0))
     expr1 = np.cos(k * np.pi * (d - a)/(b - a)) * np.exp(d)  - np.cos(k * np.pi 
                   * (c - a) / (b - a)) * np.exp(c)
     expr2 = k * np.pi / (b - a) * np.sin(k * np.pi * 
                         (d - a) / (b - a))   - k * np.pi / (b - a) * np.sin(k 
                         * np.pi * (c - a) / (b - a)) * np.exp(c)
     chi = chi * (expr1 + expr2)
-    
-    value = {"chi":chi,"psi":psi }
-    return value
+
+    return {"chi":chi,"psi":psi }
 
 # Determine coefficients for put prices 
 
 def CallPutCoefficients(CP,a,b,k):
-    if CP==OptionType.CALL:                  
+    if CP==OptionType.CALL:              
         c = 0.0
         d = b
         coef = Chi_Psi(a,b,c,d,k)
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
-        if a < b and b < 0.0:
-            H_k = np.zeros([len(k),1])
-        else:
-            H_k      = 2.0 / (b - a) * (Chi_k - Psi_k)  
+        H_k = np.zeros([len(k),1]) if a < b < 0.0 else 2.0 / (b - a) * (Chi_k - Psi_k)
     elif CP==OptionType.PUT:
         c = a
         d = 0.0
         coef = Chi_Psi(a,b,c,d,k)
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
-        H_k      = 2.0 / (b - a) * (- Chi_k + Psi_k)                  
+        H_k      = 2.0 / (b - a) * (- Chi_k + Psi_k)
     return H_k    
 
 def ChFHestonModel(r,tau,kappa,gamma,vbar,v0,rho):
@@ -105,17 +100,13 @@ def ChFHestonModel(r,tau,kappa,gamma,vbar,v0,rho):
     A  = lambda u: r * i*u *tau + kappa*vbar*tau/gamma/gamma *(kappa-gamma*rho*i*u-D1(u))\
         - 2*kappa*vbar/gamma/gamma*np.log((1.0-g(u)*np.exp(-D1(u)*tau))/(1.0-g(u)))
 
-    # Characteristic function for the Heston model    
-
-    cf = lambda u: np.exp(A(u) + C(u)*v0)
-    return cf 
+    return lambda u: np.exp(A(u) + C(u)*v0) 
 
 def CIR_Sample(NoOfPaths,kappa,gamma,vbar,s,t,v_s):
     delta = 4.0 *kappa*vbar/gamma/gamma
     c= 1.0/(4.0*kappa)*gamma*gamma*(1.0-np.exp(-kappa*(t-s)))
     kappaBar = 4.0*kappa*v_s*np.exp(-kappa*(t-s))/(gamma*gamma*(1.0-np.exp(-kappa*(t-s))))
-    sample = c* np.random.noncentral_chisquare(delta,kappaBar,NoOfPaths)
-    return  sample
+    return c* np.random.noncentral_chisquare(delta,kappaBar,NoOfPaths)
 
 def GeneratePathsHestonAES(NoOfPaths,NoOfSteps,T,r,S_0,kappa,gamma,rho,vbar,v0):    
     Z1 = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
@@ -124,18 +115,18 @@ def GeneratePathsHestonAES(NoOfPaths,NoOfSteps,T,r,S_0,kappa,gamma,rho,vbar,v0):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     V[:,0]=v0
     X[:,0]=np.log(S_0)
-    
+
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         if NoOfPaths > 1:
             Z1[:,i] = (Z1[:,i] - np.mean(Z1[:,i])) / np.std(Z1[:,i])
         W1[:,i+1] = W1[:,i] + np.power(dt, 0.5)*Z1[:,i]
-        
+
         # Exact samples for the variance process
 
         V[:,i+1] = CIR_Sample(NoOfPaths,kappa,gamma,vbar,0,dt,V[:,i])
@@ -144,12 +135,11 @@ def GeneratePathsHestonAES(NoOfPaths,NoOfSteps,T,r,S_0,kappa,gamma,rho,vbar,v0):
         k2 = rho / gamma
         X[:,i+1] = X[:,i] + k0 + k1*V[:,i] + k2 *V[:,i+1] + np.sqrt((1.0-rho**2)*V[:,i])*(W1[:,i+1]-W1[:,i])
         time[i+1] = time[i] +dt
-        
+
     # Compute exponent
 
     S = np.exp(X)
-    paths = {"time":time,"S":S}
-    return paths
+    return {"time":time,"S":S}
 
 def PathwiseDelta(S0,S,K,r,T):
     temp1 = S[:,-1]>K

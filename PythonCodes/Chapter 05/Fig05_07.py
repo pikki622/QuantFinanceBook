@@ -24,18 +24,18 @@ def GeneratePathsMerton(NoOfPaths,NoOfSteps,S0, T,xiP,muJ,sigmaJ,r,sigma):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     S = np.zeros([NoOfPaths, NoOfSteps+1])
     time = np.zeros([NoOfSteps+1])
-                
+
     dt = T / float(NoOfSteps)
     X[:,0] = np.log(S0)
     S[:,0] = S0
-    
+
     # Expectation E(e^J) for J~N(muJ,sigmaJ^2)
 
     EeJ = np.exp(muJ + 0.5*sigmaJ*sigmaJ)
     ZPois = np.random.poisson(xiP*dt,[NoOfPaths,NoOfSteps])
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     J = np.random.normal(muJ,sigmaJ,[NoOfPaths,NoOfSteps])
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -47,21 +47,20 @@ def GeneratePathsMerton(NoOfPaths,NoOfSteps,S0, T,xiP,muJ,sigmaJ,r,sigma):
         X[:,i+1]  = X[:,i] + (r - xiP*(EeJ-1) - 0.5*sigma*sigma)*dt +sigma*np.sqrt(dt)* Z[:,i]\
                     + J[:,i] * ZPois[:,i]
         time[i+1] = time[i] +dt
-        
+
     S = np.exp(X)
-    paths = {"time":time,"X":X,"S":S}
-    return paths
+    return {"time":time,"X":X,"S":S}
 
 def GeneratePathsGBM(NoOfPaths,NoOfSteps,T,r,sigma,S_0):    
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
     time = np.zeros([NoOfSteps+1])
-        
+
     X[:,0] = np.log(S_0)
-    
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -70,12 +69,11 @@ def GeneratePathsGBM(NoOfPaths,NoOfSteps,T,r,sigma,S_0):
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
         X[:,i+1] = X[:,i] + (r - 0.5 * sigma * sigma) * dt + sigma * (W[:,i+1]-W[:,i])
         time[i+1] = time[i] +dt
-        
+
     # Compute exponent of ABM
 
     S = np.exp(X)
-    paths = {"time":time,"S":S}
-    return paths
+    return {"time":time,"S":S}
 
 # Black-Scholes call option price
 

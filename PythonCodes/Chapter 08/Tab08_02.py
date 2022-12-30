@@ -30,49 +30,45 @@ def CallPutOptionPriceCOSMthd(cf,CP,S0,r,tau,K,N,L):
     # K    - List of strikes
     # N    - Number of expansion terms
     # L    - Size of truncation domain (typ.:L=8 or L=10)
-        
+
     # Reshape K to become a column vector
 
     if K is not np.array:
         K = np.array(K).reshape([len(K),1])
-    
+
     # Assigning i=sqrt(-1)
 
-    i = np.complex(0.0,1.0) 
+    i = np.complex(0.0,1.0)
     x0 = np.log(S0 / K)   
-    
+
     # Truncation domain
 
     a = 0.0 - L * np.sqrt(tau)
     b = 0.0 + L * np.sqrt(tau)
-    
+
     # Summation from k = 0 to k=N-1
 
-    k = np.linspace(0,N-1,N).reshape([N,1])  
+    k = np.linspace(0,N-1,N).reshape([N,1])
     u = k * np.pi / (b - a);  
 
     # Determine coefficients for put prices  
 
-    H_k = CallPutCoefficients(CP,a,b,k)   
+    H_k = CallPutCoefficients(CP,a,b,k)
     mat = np.exp(i * np.outer((x0 - a) , u))
-    temp = cf(u) * H_k 
-    temp[0] = 0.5 * temp[0]    
-    value = np.exp(-r * tau) * K * np.real(mat.dot(temp))     
-    return value
+    temp = cf(u) * H_k
+    temp[0] = 0.5 * temp[0]
+    return np.exp(-r * tau) * K * np.real(mat.dot(temp))
 
 # Determine coefficients for put prices 
 
 def CallPutCoefficients(CP,a,b,k):
-    if CP==OptionType.CALL:                  
+    if CP==OptionType.CALL:              
         c = 0.0
         d = b
         coef = Chi_Psi(a,b,c,d,k)
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
-        if a < b and b < 0.0:
-            H_k = np.zeros([len(k),1])
-        else:
-            H_k      = 2.0 / (b - a) * (Chi_k - Psi_k)  
+        H_k = np.zeros([len(k),1]) if a < b < 0.0 else 2.0 / (b - a) * (Chi_k - Psi_k)
     elif CP==OptionType.PUT:
         c = a
         d = 0.0
@@ -80,24 +76,23 @@ def CallPutCoefficients(CP,a,b,k):
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
         H_k      = 2.0 / (b - a) * (- Chi_k + Psi_k)               
-    
+
     return H_k    
 
 def Chi_Psi(a,b,c,d,k):
     psi = np.sin(k * np.pi * (d - a) / (b - a)) - np.sin(k * np.pi * (c - a)/(b - a))
     psi[1:] = psi[1:] * (b - a) / (k[1:] * np.pi)
     psi[0] = d - c
-    
-    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0)) 
+
+    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0))
     expr1 = np.cos(k * np.pi * (d - a)/(b - a)) * np.exp(d)  - np.cos(k * np.pi 
                   * (c - a) / (b - a)) * np.exp(c)
     expr2 = k * np.pi / (b - a) * np.sin(k * np.pi * 
                         (d - a) / (b - a))   - k * np.pi / (b - a) * np.sin(k 
                         * np.pi * (c - a) / (b - a)) * np.exp(c)
     chi = chi * (expr1 + expr2)
-    
-    value = {"chi":chi,"psi":psi }
-    return value
+
+    return {"chi":chi,"psi":psi }
     
 # Black-Scholes call option price
 
@@ -117,8 +112,7 @@ def BS_Call_Option_Price(CP,S_0,K,sigma,tau,r):
 
 def ImpliedVolatility(CP,marketPrice,K,T,S_0,r):
     func = lambda sigma: np.power(BS_Call_Option_Price(CP,S_0,K,sigma,T,r) - marketPrice,1.0)
-    impliedVol = optimize.newton(func, 0.7, tol=1e-5)
-    return impliedVol
+    return optimize.newton(func, 0.7, tol=1e-5)
 
 def ChFHestonModel(r,tau,kappa,gamma,vbar,v0,rho):
     i = np.complex(0.0,1.0)
@@ -132,10 +126,7 @@ def ChFHestonModel(r,tau,kappa,gamma,vbar,v0,rho):
     A  = lambda u: r * i*u *tau + kappa*vbar*tau/gamma/gamma *(kappa-gamma*rho*i*u-D1(u))\
         - 2*kappa*vbar/gamma/gamma*np.log((1-g(u)*np.exp(-D1(u)*tau))/(1-g(u)))
 
-    # Characteristic function for the Heston model    
-
-    cf = lambda u: np.exp(A(u) + C(u)*v0)
-    return cf 
+    return lambda u: np.exp(A(u) + C(u)*v0) 
 
 def mainCalculation():
     CP  = OptionType.CALL

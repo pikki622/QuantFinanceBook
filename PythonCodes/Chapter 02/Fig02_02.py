@@ -14,11 +14,11 @@ def GeneratePathsGBMABM(NoOfPaths,NoOfSteps,T,r,sigma,S_0):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     S = np.zeros([NoOfPaths, NoOfSteps+1])
     time = np.zeros([NoOfSteps+1])
-        
+
     X[:,0] = np.log(S_0)
-    
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -26,12 +26,11 @@ def GeneratePathsGBMABM(NoOfPaths,NoOfSteps,T,r,sigma,S_0):
             Z[:,i] = (Z[:,i] - np.mean(Z[:,i])) / np.std(Z[:,i])
         X[:,i+1] = X[:,i] + (r - 0.5 * sigma * sigma) * dt + sigma * np.power(dt, 0.5)*Z[:,i]
         time[i+1] = time[i] +dt
-        
+
     # Compute exponent of ABM
 
     S = np.exp(X)
-    paths = {"time":time,"X":X,"S":S}
-    return paths
+    return {"time":time,"X":X,"S":S}
 
 def mainCalculation():
     NoOfPaths = 25
@@ -40,42 +39,42 @@ def mainCalculation():
     r = 0.05
     sigma = 0.4
     S_0 = 100
-    
+
     Paths = GeneratePathsGBMABM(NoOfPaths,NoOfSteps,T,r,sigma,S_0)
     timeGrid = Paths["time"]
     X = Paths["X"]
     S = Paths["S"]
-    
+
     plt.figure(1)
-    plt.plot(timeGrid, np.transpose(X))   
+    plt.plot(timeGrid, np.transpose(X))
     plt.grid()
     plt.xlabel("time")
     plt.ylabel("X(t)")
-    
+
     plt.figure(2)
-    plt.plot(timeGrid, np.transpose(S))   
+    plt.plot(timeGrid, np.transpose(S))
     plt.grid()
     plt.xlabel("time")
     plt.ylabel("S(t)")
-    
-       
+
+
     # 3D graph for X(t) for paths versus density
 
     plt.figure(3)
     ax = plt.axes(projection='3d')
     zline = np.zeros([len(timeGrid),1])
-    
+
     # Plot paths
 
     n = 10
-    for i in range(0,n,1):
+    for i in range(n):
         y1 = np.squeeze(np.transpose(X[i,:]))
         x1 = timeGrid
         z1 = np.squeeze(zline)
         ax.plot3D(x1, y1, z1, 'blue')
-        
+
     ax.view_init(50, -170)
-    
+
     # Plot densities for X(T)
 
     Ti = np.linspace(0,T,5)
@@ -85,24 +84,22 @@ def mainCalculation():
         x1 = np.zeros([len(y1),1]) + ti
         z1 = normPDF(y1,ti)
         ax.plot3D(x1, y1, z1, 'red')
-    
-     # 3D graph for S(t) for paths versus density
 
     plt.figure(4)
     ax = plt.axes(projection='3d')
     zline = np.zeros([len(timeGrid),1])
-    
+
     # Plot paths
 
     n = 10
-    for i in range(0,n,1):
+    for i in range(n):
         y1 = np.squeeze(np.transpose(S[i,:]))
         x1 = timeGrid
         z1 = np.squeeze(zline)
         ax.plot3D(x1, y1, z1, 'blue')
-        
+
     ax.view_init(50, -170)
-    
+
     # Plot densities for X(T)
 
     Ti = np.linspace(0,T,5)

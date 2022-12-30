@@ -27,17 +27,13 @@ def ChFHestonModel(r,tau,kappa,gamma,vbar,v0,rho):
     A  = lambda u: r * i*u *tau + kappa*vbar*tau/gamma/gamma *(kappa-gamma*rho*i*u-D1(u))\
         - 2*kappa*vbar/gamma/gamma*np.log((1.0-g(u)*np.exp(-D1(u)*tau))/(1.0-g(u)))
 
-    # Characteristic function for the Heston model    
-
-    cf = lambda u: np.exp(A(u) + C(u)*v0)
-    return cf 
+    return lambda u: np.exp(A(u) + C(u)*v0) 
 
 def CIR_Sample(NoOfPaths,kappa,gamma,vbar,s,t,v_s):
     delta = 4.0 *kappa*vbar/gamma/gamma
     c= 1.0/(4.0*kappa)*gamma*gamma*(1.0-np.exp(-kappa*(t-s)))
     kappaBar = 4.0*kappa*v_s*np.exp(-kappa*(t-s))/(gamma*gamma*(1.0-np.exp(-kappa*(t-s))))
-    sample = c* np.random.noncentral_chisquare(delta,kappaBar,NoOfPaths)
-    return  sample
+    return c* np.random.noncentral_chisquare(delta,kappaBar,NoOfPaths)
 
 def GeneratePathsHestonAES(NoOfPaths,NoOfSteps,T,r,S_0,kappa,gamma,rho,vbar,v0):    
     Z1 = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
@@ -46,18 +42,18 @@ def GeneratePathsHestonAES(NoOfPaths,NoOfSteps,T,r,S_0,kappa,gamma,rho,vbar,v0):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     V[:,0]=v0
     X[:,0]=np.log(S_0)
-    
+
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         if NoOfPaths > 1:
             Z1[:,i] = (Z1[:,i] - np.mean(Z1[:,i])) / np.std(Z1[:,i])
         W1[:,i+1] = W1[:,i] + np.power(dt, 0.5)*Z1[:,i]
-        
+
         # Exact samples for the variance process
 
         V[:,i+1] = CIR_Sample(NoOfPaths,kappa,gamma,vbar,0,dt,V[:,i])
@@ -66,12 +62,11 @@ def GeneratePathsHestonAES(NoOfPaths,NoOfSteps,T,r,S_0,kappa,gamma,rho,vbar,v0):
         k2 = rho / gamma
         X[:,i+1] = X[:,i] + k0 + k1*V[:,i] + k2 *V[:,i+1] + np.sqrt((1.0-rho**2)*V[:,i])*(W1[:,i+1]-W1[:,i])
         time[i+1] = time[i] +dt
-        
+
     # Compute exponent
 
     S = np.exp(X)
-    paths = {"time":time,"S":S,"V":V}
-    return paths
+    return {"time":time,"S":S,"V":V}
 
 def getEVBinMethod(S,v,NoOfBins):
     if (NoOfBins != 1):

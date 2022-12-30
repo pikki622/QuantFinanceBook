@@ -48,18 +48,17 @@ def calibrationHagan(K,t,beta,iv,iv_ATM,K_ATM,f):
     iv = np.array(iv)
     # x = [rho, gamma]
     f_obj = lambda x: TargetVal(beta,x[0],x[1],iv,K,iv_ATM,K_ATM,f,t)
-    
+
     # Random initial guess
 
     initial = np.array([-0.8,0.4])
     pars  = minimize(f_obj,initial,method='nelder-mead', options = \
                      {'xtol': 1e-11, 'disp': False})
     #print(pars)
-    
+
     rho_est = pars.x[0]
     gamma_est  = pars.x[1]
-    parmCalibr =  {"rho":rho_est,"gamma":gamma_est}
-    return parmCalibr
+    return {"rho":rho_est,"gamma":gamma_est}
 
     # For given rho and gamma recompute alpha to ensure the ATM fit
 
@@ -68,25 +67,19 @@ def calibrationHagan(K,t,beta,iv,iv_ATM,K_ATM,f):
 def DetermineOptimalAlpha(iv_ATM, K_ATM,t,f,beta,rho,gamma):
     target      = lambda alpha: HaganImpliedVolatility(K_ATM,t,f,\
                                             alpha,beta,rho,gamma)-iv_ATM
-    # Initial guess does not really matter here   
-
-    alpha_est = newton(target,1.05,tol=0.0000001)
-    return alpha_est
+    return newton(target,1.05,tol=0.0000001)
     
 def TargetVal(beta,rho,gamma,iv,K,iv_ATM,K_ATM,f,t):
     if iv is not np.array:
         iv = np.array(iv).reshape([len(iv),1])
-    
+
     alpha_est = DetermineOptimalAlpha(iv_ATM, K_ATM,t,f,beta,rho,gamma)
-   
+
     # Error is defined as a difference between the market and the model
 
     errorVector = HaganImpliedVolatility(K,t,f,alpha_est,beta,rho,gamma) - iv
-    
-    # Target value is a norm of the ErrorVector
 
-    value       = np.linalg.norm(errorVector)   
-    return value
+    return np.linalg.norm(errorVector)
 
 def HaganImpliedVolatility(K,T,f,alpha,beta,rho,gamma):
 
@@ -128,13 +121,13 @@ def BS_Call_Option_Price(CP,S_0,K,sigma,tau,r):
         K = np.array(K).reshape([len(K),1])
     if sigma is not np.array:
         sigma = np.array(sigma).reshape([len(sigma),1])
-       
+
     d1    = (np.log(S_0 / K) + (r + 0.5 * np.power(sigma,2.0)) 
         * tau) / (sigma * np.sqrt(tau))
     d2    = d1 - sigma * np.sqrt(tau)
-    if str(CP).lower()=="c" or str(CP).lower()=="1":
+    if str(CP).lower() in {"c", "1"}:
         value = st.norm.cdf(d1) * S_0 - st.norm.cdf(d2) * K * np.exp(-r * tau)
-    elif str(CP).lower()=="p" or str(CP).lower()=="-1":
+    elif str(CP).lower() in {"p", "-1"}:
         value = st.norm.cdf(-d2) * K * np.exp(-r * tau) - st.norm.cdf(-d1)*S_0
     return value
 

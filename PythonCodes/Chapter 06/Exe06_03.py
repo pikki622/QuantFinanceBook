@@ -37,44 +37,40 @@ def CallPutOptionPriceCOSMthd(cf,CP,S0,r,tau,K,N,L):
 
     if K is not np.array:
         K = np.array(K).reshape([len(K),1])
-    
+
     # Assigning i=sqrt(-1)
 
-    i = np.complex(0.0,1.0) 
+    i = np.complex(0.0,1.0)
     x0 = np.log(S0 / K)   
-    
+
     # Truncation domain
 
     a = 0.0 - L * np.sqrt(tau)
     b = 0.0 + L * np.sqrt(tau)
-    
+
     # Summation from k = 0 to k=N-1
 
-    k = np.linspace(0,N-1,N).reshape([N,1])  
+    k = np.linspace(0,N-1,N).reshape([N,1])
     u = k * np.pi / (b - a);  
 
     # Determine coefficients for put prices  
 
-    H_k = CallPutCoefficients(CP,a,b,k)   
+    H_k = CallPutCoefficients(CP,a,b,k)
     mat = np.exp(i * np.outer((x0 - a) , u))
-    temp = cf(u) * H_k 
-    temp[0] = 0.5 * temp[0]    
-    value = np.exp(-r * tau) * K * np.real(mat.dot(temp))     
-    return value
+    temp = cf(u) * H_k
+    temp[0] = 0.5 * temp[0]
+    return np.exp(-r * tau) * K * np.real(mat.dot(temp))
 
 # Determine coefficients for put prices 
 
 def CallPutCoefficients(CP,a,b,k):
-    if CP==OptionType.CALL:                  
+    if CP==OptionType.CALL:              
         c = 0.0
         d = b
         coef = Chi_Psi(a,b,c,d,k)
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
-        if a < b and b < 0.0:
-            H_k = np.zeros([len(k),1])
-        else:
-            H_k      = 2.0 / (b - a) * (Chi_k - Psi_k)  
+        H_k = np.zeros([len(k),1]) if a < b < 0.0 else 2.0 / (b - a) * (Chi_k - Psi_k)
     elif CP==OptionType.PUT:
         c = a
         d = 0.0
@@ -82,7 +78,7 @@ def CallPutCoefficients(CP,a,b,k):
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
         H_k      = 2.0 / (b - a) * (- Chi_k + Psi_k)               
-    
+
     return H_k    
 
 def Chi_Psi(a,b,c,d,k):
@@ -90,17 +86,16 @@ def Chi_Psi(a,b,c,d,k):
                 (c - a)/(b - a))
     psi[1:] = psi[1:] * (b - a) / (k[1:] * np.pi)
     psi[0] = d - c
-    
-    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0)) 
+
+    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0))
     expr1 = np.cos(k * np.pi * (d - a)/(b - a)) * np.exp(d)  - np.cos(k * np.pi 
                   * (c - a) / (b - a)) * np.exp(c)
     expr2 = k * np.pi / (b - a) * np.sin(k * np.pi * 
                         (d - a) / (b - a))   - k * np.pi / (b - a) * np.sin(k 
                         * np.pi * (c - a) / (b - a)) * np.exp(c)
     chi = chi * (expr1 + expr2)
-    
-    value = {"chi":chi,"psi":psi }
-    return value
+
+    return {"chi":chi,"psi":psi }
     
 # Black-Scholes call option price
 
@@ -121,8 +116,7 @@ def BS_Call_Option_Price(CP,S_0,K,sigma,tau,r):
 def ImpliedVolatility(CP,marketPrice,K,T,S_0,r):
     func = lambda sigma: np.power(BS_Call_Option_Price(CP,S_0,K,sigma,T,r)\
                                   - marketPrice,1.0)
-    impliedVol = optimize.newton(func, 0.7, tol=1e-5)
-    return impliedVol
+    return optimize.newton(func, 0.7, tol=1e-5)
 
 def MertonCallPrice(CP,S0,K,r,tau,muJ,sigmaJ,sigma,xiP):
     X0  = np.log(S0)
@@ -159,13 +153,14 @@ def ChFForMertonModel(r,tau,muJ,sigmaJ,sigma,xiP):
     # Term for E(exp(J)-1)
 
     helpExp = np.exp(muJ + 0.5 * sigmaJ * sigmaJ) - 1.0
-    
-    # Characteristic function for Merton's model    
 
-    cf = lambda u: np.exp(i * u * (r - xiP * helpExp - 0.5 * sigma * sigma) *tau \
-        - 0.5 * sigma * sigma * u * u * tau + xiP * tau * \
-        (np.exp(i * u * muJ - 0.5 * sigmaJ * sigmaJ * u * u)-1.0))
-    return cf 
+    return lambda u: np.exp(
+        i * u * (r - xiP * helpExp - 0.5 * sigma * sigma) * tau
+        - 0.5 * sigma * sigma * u * u * tau
+        + xiP
+        * tau
+        * (np.exp(i * u * muJ - 0.5 * sigmaJ * sigmaJ * u * u) - 1.0)
+    ) 
 
 def mainCalculation():
     CP  = OptionType.CALL

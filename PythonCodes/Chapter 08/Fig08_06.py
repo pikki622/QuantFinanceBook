@@ -36,44 +36,40 @@ def CallPutOptionPriceCOSMthd(cf,CP,S0,r,tau,K,N,L):
 
     if K is not np.array:
         K = np.array(K).reshape([len(K),1])
-    
+
     # Assigning i=sqrt(-1)
 
-    i = np.complex(0.0,1.0) 
+    i = np.complex(0.0,1.0)
     x0 = np.log(S0 / K)   
-    
+
     # Truncation domain
 
     a = 0.0 - L * np.sqrt(tau)
     b = 0.0 + L * np.sqrt(tau)
-    
+
     # Summation from k = 0 to k=N-1
 
-    k = np.linspace(0,N-1,N).reshape([N,1])  
+    k = np.linspace(0,N-1,N).reshape([N,1])
     u = k * np.pi / (b - a);  
 
     # Determine coefficients for put prices  
 
-    H_k = CallPutCoefficients(CP,a,b,k)   
+    H_k = CallPutCoefficients(CP,a,b,k)
     mat = np.exp(i * np.outer((x0 - a) , u))
-    temp = cf(u) * H_k 
-    temp[0] = 0.5 * temp[0]    
-    value = np.exp(-r * tau) * K * np.real(mat.dot(temp))     
-    return value
+    temp = cf(u) * H_k
+    temp[0] = 0.5 * temp[0]
+    return np.exp(-r * tau) * K * np.real(mat.dot(temp))
 
 # Determine coefficients for put prices 
 
 def CallPutCoefficients(CP,a,b,k):
-    if CP==OptionType.CALL:                  
+    if CP==OptionType.CALL:              
         c = 0.0
         d = b
         coef = Chi_Psi(a,b,c,d,k)
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
-        if a < b and b < 0.0:
-            H_k = np.zeros([len(k),1])
-        else:
-            H_k      = 2.0 / (b - a) * (Chi_k - Psi_k)  
+        H_k = np.zeros([len(k),1]) if a < b < 0.0 else 2.0 / (b - a) * (Chi_k - Psi_k)
     elif CP==OptionType.PUT:
         c = a
         d = 0.0
@@ -81,24 +77,23 @@ def CallPutCoefficients(CP,a,b,k):
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
         H_k      = 2.0 / (b - a) * (- Chi_k + Psi_k)               
-    
+
     return H_k    
 
 def Chi_Psi(a,b,c,d,k):
     psi = np.sin(k * np.pi * (d - a) / (b - a)) - np.sin(k * np.pi * (c - a)/(b - a))
     psi[1:] = psi[1:] * (b - a) / (k[1:] * np.pi)
     psi[0] = d - c
-    
-    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0)) 
+
+    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0))
     expr1 = np.cos(k * np.pi * (d - a)/(b - a)) * np.exp(d)  - np.cos(k * np.pi 
                   * (c - a) / (b - a)) * np.exp(c)
     expr2 = k * np.pi / (b - a) * np.sin(k * np.pi * 
                         (d - a) / (b - a))   - k * np.pi / (b - a) * np.sin(k 
                         * np.pi * (c - a) / (b - a)) * np.exp(c)
     chi = chi * (expr1 + expr2)
-    
-    value = {"chi":chi,"psi":psi }
-    return value
+
+    return {"chi":chi,"psi":psi }
     
 # Black-Scholes call option price
 
@@ -144,27 +139,24 @@ def ChFBatesModel(r,tau,kappa,gamma,vbar,v0,rho,xiP,muJ,sigmaJ):
 
     AHes= lambda u: r * i*u *tau + kappa*vbar*tau/gamma/gamma *(kappa-gamma*\
         rho*i*u-D1(u)) - 2*kappa*vbar/gamma/gamma*np.log((1.0-g(u)*np.exp(-D1(u)*tau))/(1.0-g(u)))
-    
+
     A = lambda u: AHes(u) - xiP * i * u * tau *(np.exp(muJ+0.5*sigmaJ*sigmaJ) - 1.0) + \
             xiP * tau * (np.exp(i*u*muJ - 0.5 * sigmaJ * sigmaJ * u * u) - 1.0)
-    
-    # Characteristic function for the Heston model    
 
-    cf = lambda u: np.exp(A(u) + C(u)*v0)
-    return cf 
+    return lambda u: np.exp(A(u) + C(u)*v0) 
 
 def mainCalculation():
     CP  = OptionType.CALL
     S0  = 100.0
     r   = 0.0
     tau = 1.0
-    
+
     K = np.linspace(40,180,10)
     K = np.array(K).reshape([len(K),1])
-    
+
     N = 1000
     L = 5
-        
+
     kappa = 1.2
     gamma = 0.05
     vbar  = 0.05
@@ -173,7 +165,7 @@ def mainCalculation():
     muJ   = 0.0
     sigmaJ= 0.2
     xiP   = 0.1
-    
+
     # Effect of xiP
 
     plt.figure(1)
@@ -182,26 +174,26 @@ def mainCalculation():
     plt.ylabel('implied volatility')
     xiPV = [0.01, 0.1, 0.2, 0.3]
     legend = []
-    for xiPTemp in xiPV:    
+    for xiPTemp in xiPV:
 
-       # Evaluate the Bates model
-       # Compute the ChF for the Bates model
+        # Evaluate the Bates model
+        # Compute the ChF for the Bates model
 
-       cf = ChFBatesModel(r,tau,kappa,gamma,vbar,v0,rho,xiPTemp,muJ,sigmaJ)
-         
-       # The COS method
+        cf = ChFBatesModel(r,tau,kappa,gamma,vbar,v0,rho,xiPTemp,muJ,sigmaJ)
 
-       valCOS = CallPutOptionPriceCOSMthd(cf, CP, S0, r, tau, K, N, L)
-        
-       # Implied volatilities
+        # The COS method
 
-       IV =np.zeros([len(K),1])
-       for idx in range(0,len(K)):
-           IV[idx] = ImpliedVolatility(CP,valCOS[idx],K[idx],tau,S0,r)
-       plt.plot(K,IV*100.0)
-       legend.append('xiP={0}'.format(xiPTemp))
+        valCOS = CallPutOptionPriceCOSMthd(cf, CP, S0, r, tau, K, N, L)
+
+        # Implied volatilities
+
+        IV =np.zeros([len(K),1])
+        for idx in range(len(K)):
+            IV[idx] = ImpliedVolatility(CP,valCOS[idx],K[idx],tau,S0,r)
+        plt.plot(K,IV*100.0)
+        legend.append('xiP={0}'.format(xiPTemp))
     plt.legend(legend)
-    
+
     # Effect of muJ
 
     plt.figure(2)
@@ -210,26 +202,26 @@ def mainCalculation():
     plt.ylabel('implied volatility')
     muJPV = [-0.5, -0.25, 0, 0.25]
     legend = []
-    for muJTemp in muJPV:    
+    for muJTemp in muJPV:
 
-       # Evaluate the Bates model
-       # Compute the ChF for the Bates model
+        # Evaluate the Bates model
+        # Compute the ChF for the Bates model
 
-       cf = ChFBatesModel(r,tau,kappa,gamma,vbar,v0,rho,xiP,muJTemp,sigmaJ)
-         
-       # The COS method
+        cf = ChFBatesModel(r,tau,kappa,gamma,vbar,v0,rho,xiP,muJTemp,sigmaJ)
 
-       valCOS = CallPutOptionPriceCOSMthd(cf, CP, S0, r, tau, K, N, L)
-        
-       # Implied volatilities
+        # The COS method
 
-       IV =np.zeros([len(K),1])
-       for idx in range(0,len(K)):
-           IV[idx] = ImpliedVolatility(CP,valCOS[idx],K[idx],tau,S0,r)
-       plt.plot(K,IV*100.0)
-       legend.append('muJ={0}'.format(muJTemp))
+        valCOS = CallPutOptionPriceCOSMthd(cf, CP, S0, r, tau, K, N, L)
+
+        # Implied volatilities
+
+        IV =np.zeros([len(K),1])
+        for idx in range(len(K)):
+            IV[idx] = ImpliedVolatility(CP,valCOS[idx],K[idx],tau,S0,r)
+        plt.plot(K,IV*100.0)
+        legend.append('muJ={0}'.format(muJTemp))
     plt.legend(legend)
-    
+
     # Effect of sigmaJ
 
     plt.figure(3)
@@ -238,24 +230,24 @@ def mainCalculation():
     plt.ylabel('implied volatility')
     sigmaJV = [0.01, 0.15, 0.2, 0.25]
     legend = []
-    for sigmaJTemp in sigmaJV:    
+    for sigmaJTemp in sigmaJV:
 
-       # Evaluate the Bates model
-       # Compute the ChF for the Bates model
+        # Evaluate the Bates model
+        # Compute the ChF for the Bates model
 
-       cf = ChFBatesModel(r,tau,kappa,gamma,vbar,v0,rho,xiP,muJ,sigmaJTemp)
-         
-       # The COS method
+        cf = ChFBatesModel(r,tau,kappa,gamma,vbar,v0,rho,xiP,muJ,sigmaJTemp)
 
-       valCOS = CallPutOptionPriceCOSMthd(cf, CP, S0, r, tau, K, N, L)
-        
-       # Implied volatilities
+        # The COS method
 
-       IV =np.zeros([len(K),1])
-       for idx in range(0,len(K)):
-           IV[idx] = ImpliedVolatility(CP,valCOS[idx],K[idx],tau,S0,r)
-       plt.plot(K,IV*100.0)
-       legend.append('sigmaJ={0}'.format(sigmaJTemp))
+        valCOS = CallPutOptionPriceCOSMthd(cf, CP, S0, r, tau, K, N, L)
+
+        # Implied volatilities
+
+        IV =np.zeros([len(K),1])
+        for idx in range(len(K)):
+            IV[idx] = ImpliedVolatility(CP,valCOS[idx],K[idx],tau,S0,r)
+        plt.plot(K,IV*100.0)
+        legend.append('sigmaJ={0}'.format(sigmaJTemp))
     plt.legend(legend)
     
 mainCalculation()

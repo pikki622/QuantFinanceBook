@@ -26,49 +26,45 @@ def CallPutOptionPriceCOSMthd(cf,CP,S0,r,tau,K,N,L):
     # K    - List of strikes
     # N    - Number of expansion terms
     # L    - Size of truncation domain (typ.:L=8 or L=10)  
-        
+
     # Reshape K to become a column vector
 
     if K is not np.array:
         K = np.array(K).reshape([len(K),1])
-    
+
     # Assigning i=sqrt(-1)
 
-    i = np.complex(0.0,1.0) 
+    i = np.complex(0.0,1.0)
     x0 = np.log(S0 / K)   
-    
+
     # Truncation domain
 
     a = 0.0 - L * np.sqrt(tau)
     b = 0.0 + L * np.sqrt(tau)
-    
+
     # Summation from k = 0 to k=N-1
 
-    k = np.linspace(0,N-1,N).reshape([N,1])  
+    k = np.linspace(0,N-1,N).reshape([N,1])
     u = k * np.pi / (b - a);  
 
     # Determine coefficients for put prices  
 
-    H_k = CallPutCoefficients(CP,a,b,k)   
+    H_k = CallPutCoefficients(CP,a,b,k)
     mat = np.exp(i * np.outer((x0 - a) , u))
-    temp = cf(u) * H_k 
-    temp[0] = 0.5 * temp[0]    
-    value = np.exp(-r * tau) * K * np.real(mat.dot(temp))     
-    return value
+    temp = cf(u) * H_k
+    temp[0] = 0.5 * temp[0]
+    return np.exp(-r * tau) * K * np.real(mat.dot(temp))
 
 # Determine coefficients for put prices 
 
 def CallPutCoefficients(CP,a,b,k):
-    if CP==OptionType.CALL:                  
+    if CP==OptionType.CALL:              
         c = 0.0
         d = b
         coef = Chi_Psi(a,b,c,d,k)
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
-        if a < b and b < 0.0:
-            H_k = np.zeros([len(k),1])
-        else:
-            H_k      = 2.0 / (b - a) * (Chi_k - Psi_k)  
+        H_k = np.zeros([len(k),1]) if a < b < 0.0 else 2.0 / (b - a) * (Chi_k - Psi_k)
     elif CP==OptionType.PUT:
         c = a
         d = 0.0
@@ -76,24 +72,23 @@ def CallPutCoefficients(CP,a,b,k):
         Chi_k = coef["chi"]
         Psi_k = coef["psi"]
         H_k      = 2.0 / (b - a) * (- Chi_k + Psi_k)               
-    
+
     return H_k    
 
 def Chi_Psi(a,b,c,d,k):
     psi = np.sin(k * np.pi * (d - a) / (b - a)) - np.sin(k * np.pi * (c - a)/(b - a))
     psi[1:] = psi[1:] * (b - a) / (k[1:] * np.pi)
     psi[0] = d - c
-    
-    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0)) 
+
+    chi = 1.0 / (1.0 + np.power((k * np.pi / (b - a)) , 2.0))
     expr1 = np.cos(k * np.pi * (d - a)/(b - a)) * np.exp(d)  - np.cos(k * np.pi 
                   * (c - a) / (b - a)) * np.exp(c)
     expr2 = k * np.pi / (b - a) * np.sin(k * np.pi * 
                         (d - a) / (b - a))   - k * np.pi / (b - a) * np.sin(k 
                         * np.pi * (c - a) / (b - a)) * np.exp(c)
     chi = chi * (expr1 + expr2)
-    
-    value = {"chi":chi,"psi":psi }
-    return value
+
+    return {"chi":chi,"psi":psi }
  
     # Black-Scholes call option price
 
@@ -140,10 +135,7 @@ def ChFHestonModel(r,tau,kappa,gamma,vbar,v0,rho):
     A  = lambda u: r * i*u *tau + kappa*vbar*tau/gamma/gamma *(kappa-gamma*rho*i*u-D1(u))\
         - 2*kappa*vbar/gamma/gamma*np.log((1.0-g(u)*np.exp(-D1(u)*tau))/(1.0-g(u)))
 
-    # Characteristic function for the Heston model    
-
-    cf = lambda u: np.exp(A(u) + C(u)*v0)
-    return cf 
+    return lambda u: np.exp(A(u) + C(u)*v0) 
 
 def OptionPriceWithCosMethodHelp(CP,T,K,S0,r,kappa,gamma,v0,vbar,rho):
 
@@ -151,12 +143,11 @@ def OptionPriceWithCosMethodHelp(CP,T,K,S0,r,kappa,gamma,v0,vbar,rho):
 
     N = 500
     L = 8
-           
+
     # ChF for the Heston model
 
     cf = ChFHestonModel(r,T,kappa,gamma,vbar,v0,rho)
-    OptPrice = CallPutOptionPriceCOSMthd(cf, CP, S0, r, T, K, N, L)   
-    return OptPrice
+    return CallPutOptionPriceCOSMthd(cf, CP, S0, r, T, K, N, L)
     
 def EUOptionPriceFromMCPaths(CP,S,K,T,r):
 
@@ -173,10 +164,10 @@ def mainCalculation():
 
     kappa   = 1.3
     vbar    = 0.05
-    gamma   = 0.3 
-    rho     = -0.3 
+    gamma   = 0.3
+    rho     = -0.3
     v0      = 0.1
-    r       = 0.06    
+    r       = 0.06
     S0     = 1.0
     T      = 1.0
     r      = 0.06
@@ -186,17 +177,17 @@ def mainCalculation():
 
     NoOfPaths = 5000
     NoOfSteps = (int)(250*T)
-    
-       
+
+
     # Define a function to calculate option prices
 
     V =lambda T,K: OptionPriceWithCosMethodHelp(CP,T,K,S0,r,kappa,gamma,v0,vbar,rho)
-   
+
     # Define a shock size for derivative calculation
 
     bump_T  = 1e-4
     bump_K  = 1e-4
-    
+
     # Define derivatives
 
     dV_dT   = lambda T,K: (V(T + bump_T,K) - V(T ,K)) / bump_T
@@ -213,75 +204,75 @@ def mainCalculation():
     np.random.seed(5)
     Z         = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     S         = np.zeros([NoOfPaths,NoOfSteps+1])
-    
+
     S[:,0]    = S0;
     time = np.zeros([NoOfSteps+1,1])
-    
-    for i in range(0,NoOfSteps):
+
+    for i in range(NoOfSteps):
 
         # This condition is necessary as for t=0 we cannot compute implied
         # volatilities
 
         if time[i]==0.0:
             time[i]=0.0001
-        
+
         print('current time is {0}'.format(time[i]))
 
         # Standarize Normal(0,1)
 
         Z[:,i]=(Z[:,i]-np.mean(Z[:,i]))/np.std(Z[:,i])
-        
+
         # Compute local volatility
 
         S_i = np.array(S[:,i]).reshape([NoOfPaths,1])
-        
+
         if time[i]  >0 :
             sig = np.real(sigmaLV2(time[i],S_i))
         elif time[i]==0:
             sig = np.real(sigmaLV2(dt/2.0,S_i))
-        
+
         np.nan_to_num(sig)
-        
+
         # Because of discretizations we may encouter negative variance which
         # are set to 0 here.
 
         sig=np.maximum(sig,1e-14)
         sigmaLV = np.sqrt(sig.transpose())  
-        
+
         # Stock path
 
         S[:,i+1] = S[:,i] * (1.0 + r*dt + sigmaLV*Z[:,i]*np.sqrt(dt))
-                       
+
         # We force that at each time S(t)/M(t) is a martingale
 
         S[:,i+1] = S[:,i+1] - np.mean(S[:,i+1]) + S0*np.exp(r*(time[i]+dt))
-        
+
         # Make sure that after moment matching we don't encounter negative stock values
 
         S[:,i+1] = np.maximum(S[:,i+1],1e-14)
-        
+
         # Adjust time
 
         time[i+1] = time[i] + dt
-        
+
     # Plot some results
 
     K = np.linspace(0.5,1.7,50)
     OptPrice = np.zeros([len(K),1])
     IV_Heston = np.zeros([len(K),1])
     IV_MC = np.zeros([len(K),1])
-    
+
     # Prices from the Heston model
 
     valCOS = V(T,K)
-    
+
     # Implied volatilities
 
     for (idx,k) in enumerate(K):
         OptPrice[idx] = EUOptionPriceFromMCPaths(CP,S[:,-1],k,T,r)
         IV_MC[idx]    = ImpliedVolatility(CP,OptPrice[idx],k,T,S0,r)*100.0
         IV_Heston[idx] =ImpliedVolatility(CP,valCOS[idx],K[idx],T,S0,r)*100
-        
+
     # Plot the option prices
 
     plt.figure(1)
@@ -289,7 +280,7 @@ def mainCalculation():
     plt.grid()
     plt.xlabel('strike')
     plt.ylabel('option price')
-    
+
     # Plot the implied volatilities
 
     plt.figure(2)

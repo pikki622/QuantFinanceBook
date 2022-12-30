@@ -22,11 +22,11 @@ def GeneratePathsGBM(NoOfPaths,NoOfSteps,T,r,sigma,S_0):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
     time = np.zeros([NoOfSteps+1])
-        
+
     X[:,0] = np.log(S_0)
-    
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -35,12 +35,11 @@ def GeneratePathsGBM(NoOfPaths,NoOfSteps,T,r,sigma,S_0):
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
         X[:,i+1] = X[:,i] + (r - 0.5 * sigma * sigma) * dt + sigma * (W[:,i+1]-W[:,i])
         time[i+1] = time[i] +dt
-        
+
     # Compute exponent of ABM
 
     S = np.exp(X)
-    paths = {"time":time,"S":S}
-    return paths
+    return {"time":time,"S":S}
 
 # Black-Scholes call option price
 
@@ -91,17 +90,17 @@ def mainCalculation():
     s0        = 10
     K         = [10]
     pathId    = 10
-    
+
     np.random.seed(3)
     Paths = GeneratePathsGBM(NoOfPaths,NoOfSteps,T,r,sigma,s0)
     time  = Paths["time"]
     S     = Paths["S"]
-    
+
     # Settings for the plots    
 
     s0Grid     = np.linspace(s0/100.0,1.5*s0,50)
     timeGrid   = np.linspace(0.02,T-0.02,100)
-    
+
     # Prepare the necessary lambda functions
 
     CallOpt   = lambda t,s0 : BS_Call_Put_Option_Price(OptionType.CALL,s0,K,sigma,t,T,r)
@@ -109,7 +108,7 @@ def mainCalculation():
     DeltaCall = lambda t,s0 : BS_Delta(OptionType.CALL,s0,K,sigma,t,T,r)
     Gamma     = lambda t,s0 : BS_Gamma(s0,K,sigma,t,T,r)
     Vega      = lambda t,s0 : BS_Vega(s0,K,sigma,t,T,r)    
-    
+
     # Prepare empty matrices for storing the results
 
     callOptM   = np.zeros([len(timeGrid),len(s0Grid)])
@@ -120,7 +119,7 @@ def mainCalculation():
     TM         = np.zeros([len(timeGrid),len(s0Grid)])
     s0M        = np.zeros([len(timeGrid),len(s0Grid)])
 
-    for i in range(0,len(timeGrid)):
+    for i in range(len(timeGrid)):
         TM[i,:]         = timeGrid[i]
         s0M[i,:]        = s0Grid
         callOptM[i,:]   = CallOpt(timeGrid[i],s0Grid)
@@ -128,16 +127,16 @@ def mainCalculation():
         deltaCallM[i,:] = DeltaCall(timeGrid[i],s0Grid)
         gammaM[i,:]     = Gamma(timeGrid[i],s0Grid) 
         vegaM[i,:]      = Vega(timeGrid[i],s0Grid) 
-    
+
     # Plot stock path
 
     plt.figure(1)
-    plt.plot(time,  np.squeeze(S[pathId,:]))   
+    plt.plot(time,  np.squeeze(S[pathId,:]))
     plt.grid()
     plt.xlabel("time")
     plt.ylabel("S(t)")
     plt.plot(T,K,'ok')
-    
+
     # Plot the call option surface 
 
     fig = plt.figure(2)
@@ -146,7 +145,7 @@ def mainCalculation():
     plt.xlabel('t')
     plt.ylabel('S(t)')
     plt.title('Call option surface')
-    Finterp = RegularGridInterpolator((timeGrid[0:],s0Grid),callOptM)
+    Finterp = RegularGridInterpolator((timeGrid[:], s0Grid), callOptM)
     v = np.zeros([len(time),1])
     vTemp = []
     timeTemp = []
@@ -161,8 +160,6 @@ def mainCalculation():
     # Add the stock path to the surface 
 
     ax.plot3D(np.array(timeTemp),np.array(pathTemp),np.array(vTemp), 'blue')
-    
-     # Plot the put surface.    
 
     fig = plt.figure(3)
     ax = fig.gca(projection='3d')
@@ -170,7 +167,7 @@ def mainCalculation():
     plt.xlabel('t')
     plt.ylabel('S(t)')
     plt.title('Put option surface')
-    Finterp = RegularGridInterpolator((timeGrid[0:],s0Grid),putOptM)
+    Finterp = RegularGridInterpolator((timeGrid[:], s0Grid), putOptM)
     v = np.zeros([len(time),1])
     vTemp = []
     timeTemp = []
@@ -186,7 +183,7 @@ def mainCalculation():
 
     ax.plot3D(np.array(timeTemp),np.array(pathTemp),np.array(vTemp), 'blue')
     ax.view_init(30, 120)
-    
+
     # Plot the Delta for a call option surface    
 
     fig = plt.figure(4)
@@ -195,7 +192,7 @@ def mainCalculation():
     plt.xlabel('t')
     plt.ylabel('S(t)')
     plt.title('Delta for a call option surface')
-    Finterp = RegularGridInterpolator((timeGrid[0:],s0Grid),deltaCallM)
+    Finterp = RegularGridInterpolator((timeGrid[:], s0Grid), deltaCallM)
     v = np.zeros([len(time),1])
     vTemp = []
     timeTemp = []
@@ -210,7 +207,7 @@ def mainCalculation():
     # Add the stock path to the surface 
 
     ax.plot3D(np.array(timeTemp),np.array(pathTemp),np.array(vTemp), 'blue')
-    
+
     # Plot the Vega option surface.    
 
     fig = plt.figure(5)
@@ -219,7 +216,7 @@ def mainCalculation():
     plt.xlabel('t')
     plt.ylabel('S(t)')
     plt.title('Vega surface')
-    Finterp = RegularGridInterpolator((timeGrid[0:],s0Grid),vegaM)
+    Finterp = RegularGridInterpolator((timeGrid[:], s0Grid), vegaM)
     v = np.zeros([len(time),1])
     vTemp = []
     timeTemp = []
@@ -235,7 +232,7 @@ def mainCalculation():
 
     ax.plot3D(np.array(timeTemp),np.array(pathTemp),np.array(vTemp), 'blue')
     ax.view_init(30, -120)
-    
+
     # Plot the Gamma option surface    
 
     fig = plt.figure(6)
@@ -244,7 +241,7 @@ def mainCalculation():
     plt.xlabel('t')
     plt.ylabel('S(t)')
     plt.title('Gamma surface')
-    Finterp = RegularGridInterpolator((timeGrid[0:],s0Grid),gammaM)
+    Finterp = RegularGridInterpolator((timeGrid[:], s0Grid), gammaM)
     v = np.zeros([len(time),1])
     vTemp = []
     timeTemp = []

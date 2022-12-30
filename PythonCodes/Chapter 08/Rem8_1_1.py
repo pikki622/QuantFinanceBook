@@ -26,24 +26,21 @@ class OptionType(enum.Enum):
 def GenerateBrownianMotion(NoOfPaths,NoOfSteps,T):    
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
-   
+
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         if NoOfPaths > 1:
             Z[:,i] = (Z[:,i] - np.mean(Z[:,i])) / np.std(Z[:,i])
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
-        
-        time[i+1] = time[i] +dt
-        
-    # Return stock paths
 
-    paths = {"time":time,"W":W}
-    return paths
+        time[i+1] = time[i] +dt
+
+    return {"time":time,"W":W}
 
 def mainCalculation():
     NoOfPaths = 1000

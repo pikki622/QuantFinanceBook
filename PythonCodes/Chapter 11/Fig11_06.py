@@ -16,9 +16,9 @@ def GeneratePathsCIREuler(NoOfPaths,NoOfSteps,T,lambd,r0,theta,gamma):
     R = np.zeros([NoOfPaths, NoOfSteps+1])
     R[:,0]=r0
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -31,11 +31,8 @@ def GeneratePathsCIREuler(NoOfPaths,NoOfSteps,T,lambd,r0,theta,gamma):
 
         R[:,i+1] = np.maximum(R[:,i+1],0.0)
         time[i+1] = time[i] +dt
-        
-    # Outputs
 
-    paths = {"time":time,"R":R}
-    return paths
+    return {"time":time,"R":R}
 def mainCalculation():
     NoOfPaths = 1
     NoOfSteps = 500

@@ -72,29 +72,29 @@ def mainCalculation():
     exactVega  = BS_Vega(S0,K,sigma,t,T,r)
     bsPrice    = lambda S0,sigma: BS_Call_Put_Option_Price(CP,S0,K,sigma,t,T,r)
 
-    
-    for idx in range(0,len(dxV)):
+
+    for idx in range(len(dxV)):
         dx = dxV[idx]
-    
+
         # Shocks will be proportional to the parameter
 
         dS0 =dx *S0
         dsigma =dx *sigma
-    
+
         # Delta estimation, i.e. dV/dS0
 
         frwdDiffDelta    = (bsPrice(S0+dS0,sigma) - bsPrice(S0,sigma))/dS0
         centralDiffDelta = (bsPrice(S0+dS0,sigma) - bsPrice(S0-dS0,sigma))/(2*dS0)
         error_frwdDiff_DELTA[idx] = abs(exactDelta - frwdDiffDelta)
         error_centDiff_DELTA[idx] = abs(exactDelta - centralDiffDelta)
-        
+
         # Vega estimation, i.e. dV/dsigma
 
         frwdDiffVega    = (bsPrice(S0,sigma+dsigma) - bsPrice(S0,sigma))/dsigma
         centralDiffVega = (bsPrice(S0,sigma+dsigma) - bsPrice(S0,sigma-dsigma))/(2*dsigma)
         error_frwdDiff_VEGA[idx] = abs(frwdDiffVega- exactVega)
         error_centDiff_VEGA[idx] = abs(centralDiffVega- exactVega)
-    
+
     plt.figure(1)
     plt.plot(dxV, error_frwdDiff_DELTA)
     plt.plot(dxV, error_centDiff_DELTA,'--r')
@@ -103,8 +103,8 @@ def mainCalculation():
     plt.ylabel('error,  epsilon(Delta{S0})')
     plt.legend('forward diff.','cental diff.')
     plt.title('frac{dV}{dS_0}, errors for the forward and central difference')
-    
-    
+
+
     plt.figure(2)
     plt.plot(dxV, error_frwdDiff_VEGA)
     plt.plot(dxV, error_centDiff_VEGA,'--r')

@@ -12,18 +12,18 @@ def GeneratePathsTwoStocksEuler(NoOfPaths,NoOfSteps,T,r,S10,S20,rho,sigma1,sigma
     Z2 = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     W1 = np.zeros([NoOfPaths, NoOfSteps+1])
     W2 = np.zeros([NoOfPaths, NoOfSteps+1])
-   
+
     # Initialization
 
     X1 = np.zeros([NoOfPaths, NoOfSteps+1])
     X1[:,0] =np.log(S10)
     X2 = np.zeros([NoOfPaths, NoOfSteps+1])
     X2[:,0] =np.log(S20)
-          
+
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -31,24 +31,24 @@ def GeneratePathsTwoStocksEuler(NoOfPaths,NoOfSteps,T,r,S10,S20,rho,sigma1,sigma
             Z1[:,i] = (Z1[:,i] - np.mean(Z1[:,i])) / np.std(Z1[:,i])
             Z2[:,i] = (Z2[:,i] - np.mean(Z2[:,i])) / np.std(Z2[:,i])
         Z2[:,i] = rho *Z1[:,i] + np.sqrt(1.0-rho**2.0)*Z2[:,i]
-        
+
         W1[:,i+1] = W1[:,i] + np.power(dt, 0.5)*Z1[:,i]
         W2[:,i+1] = W2[:,i] + np.power(dt, 0.5)*Z2[:,i]
-        
+
         X1[:,i+1] = X1[:,i] + (r -0.5*sigma1**2.0)* dt + sigma1 * (W1[:,i+1] - W1[:,i])
         X2[:,i+1] = X2[:,i] + (r -0.5*sigma2**2.0)* dt + sigma2 * (W2[:,i+1] - W2[:,i])
         time[i+1] = time[i] +dt
-        
-    # Return stock paths
 
-    paths = {"time":time,"S1":np.exp(X1),"S2":np.exp(X2)}
-    return paths
+    return {"time":time,"S1":np.exp(X1),"S2":np.exp(X2)}
 
 def PathwiseRho(S10,S20,sigma1,sigma2,rho,S1,S2,K,r,T):
     W1 = 1.0/sigma1*(np.log(S1[:,-1]/S10)-(r-0.5*sigma1**2.0)*T)
     W2 = 1.0/(sigma2*np.sqrt(1.0-rho**2.0))*(np.log(S2[:,-1]/S20)-(r-0.5*sigma2**2.0)*T- sigma2*rho*W1)
-    dVdrho = np.exp(-r*T)*np.mean((S1[:,-1]>K)*S2[:,-1]*(sigma2*W1-sigma2*rho/(np.sqrt(1.0-rho**2.0))*W2))
-    return dVdrho
+    return np.exp(-r * T) * np.mean(
+        (S1[:, -1] > K)
+        * S2[:, -1]
+        * (sigma2 * W1 - sigma2 * rho / (np.sqrt(1.0 - rho**2.0)) * W2)
+    )
 
 def AssetOfNothingPayoff(S1,S2,K,T,r):
     optValue = np.zeros([len(K),1])

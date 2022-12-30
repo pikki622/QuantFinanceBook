@@ -16,32 +16,26 @@ def ChFForMertonModel(r,tau,muJ,sigmaJ,sigma,xiP, S0):
     # Term for E(exp(J)-1)
 
     helpExp = np.exp(muJ + 0.5 * sigmaJ * sigmaJ) - 1.0
-    
-    # Characteristic function for Merton's model    
 
-    cf = lambda u: np.exp(i*u*np.log(S0)) * np.exp(i * u * (r - xiP * helpExp - 0.5 * sigma * sigma) *tau \
-        - 0.5 * sigma * sigma * u * u * tau + xiP * tau * \
-        (np.exp(i * u * muJ - 0.5 * sigmaJ * sigmaJ * u * u)-1.0))
-    return cf 
+    return lambda u: np.exp(i * u * np.log(S0)) * np.exp(
+        i * u * (r - xiP * helpExp - 0.5 * sigma * sigma) * tau
+        - 0.5 * sigma * sigma * u * u * tau
+        + xiP
+        * tau
+        * (np.exp(i * u * muJ - 0.5 * sigmaJ * sigmaJ * u * u) - 1.0)
+    ) 
 
 def COSDensity(cf,x,N,a,b):
     i = np.complex(0.0,1.0) #assigning i=sqrt(-1)
     k = np.linspace(0,N-1,N)
     u = np.zeros([1,N])
     u = k * np.pi / (b-a)
-        
+
     # F_k coefficients
 
     F_k    = 2.0 / (b - a) * np.real(cf(u) * np.exp(-i * u * a));
-    F_k[0] = F_k[0] * 0.5; # adjustment for the first term
-    
-    # Final calculation
-
-    f_X = np.matmul(F_k , np.cos(np.outer(u, x - a )))
-        
-    # We output only the first row
-
-    return f_X
+    F_k[0] = F_k[0] * 0.5
+    return np.matmul(F_k , np.cos(np.outer(u, x - a )))
 
 def mainCalculation():
     T      = 5.0

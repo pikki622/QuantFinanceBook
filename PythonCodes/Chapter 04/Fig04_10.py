@@ -62,22 +62,21 @@ def LocalVarianceBasedOnSABR(s0,frwd,r,alpha,beta,rho,volvol):
 
     dsigmadt   = lambda x,t: (sigma(x,t+dt)-sigma(x,t))/dt
     dsigmadx   = lambda x,t: (sigma(x+dx,t)-sigma(x-dx,t))/(2.0*dx)
-    d2sigmadx2 = lambda x,t: (sigma(x+dx,t) + sigma(x-dx,t)-2.0*sigma(x,t))/(dx*dx)
+    d2sigmadx2 = lambda x,t: (sigma(x+dx,t) + sigma(x-dx,t)-2.0*sigma(x,t)) / dx**2
     omega      = lambda x,t: sigma(x,t)*sigma(x,t)*t
     domegadt   = lambda x,t: sigma(x,t)**2.0 + 2.0*t*sigma(x,t)*dsigmadt(x,t)
     domegadx   = lambda x,t: 2.0*t*sigma(x,t)*dsigmadx(x,t)
     #d2omegadx2 = lambda x,t: 2.0*t*(dsigmadx(x,t))**2.0 + 2.0*t*sigma(x,t)*d2sigmadx2(x,t)
     d2omegadx2 = lambda x,t: 2.0*t*np.power(dsigmadx(x,t),2.0) + 2.0*t*sigma(x,t)*d2sigmadx2(x,t)
 
-    term1    = lambda x,t:  1.0+x*domegadx(x,t)*(0.5 - np.log(x/(s0*np.exp(r*t))) / omega(x,t))    
+    term1    = lambda x,t:  1.0+x*domegadx(x,t)*(0.5 - np.log(x/(s0*np.exp(r*t))) / omega(x,t))
     term2    = lambda x,t:  0.5*np.power(x,2.0)*d2omegadx2(x,t)
     term3    = lambda x,t:  0.5*np.power(x,2.0)*np.power(domegadx(x,t),2.0)*(-1.0/8.0-1.0/(2.0*omega(x,t))\
             +np.log(x/(s0*np.exp(r*t)))*np.log(x/(s0*np.exp(r*t)))/(2*omega(x,t)*omega(x,t)))
 
-    # Final expression for local variance
-
-    sigmalv2 = lambda x,t:(domegadt(x,t)+r*x*domegadx(x,t))/(term1(x,t)+term2(x,t)+term3(x,t))
-    return sigmalv2
+    return lambda x, t: (domegadt(x, t) + r * x * domegadx(x, t)) / (
+        term1(x, t) + term2(x, t) + term3(x, t)
+    )
  
     # Black-Scholes call option price
 
@@ -142,65 +141,65 @@ def mainCalculation():
 
     NoOfPaths = 25000
     NoOfSteps = (int)(100*T)
-    
+
     # We define the market to be driven by Hagan's SABR formula
     # Based on this formula we derive the local volatility/variance 
 
     sigma     = lambda x,t: HaganImpliedVolatility(x,t,f_0,alpha,beta,rho,volvol)
-    
+
     # Local variance based on the Hagan's SABR formula
 
     sigmalv2  = LocalVarianceBasedOnSABR(s0,f_0,r,alpha,beta,rho,volvol)
-           
+
     # Monte Carlo simulation
 
     dt        = T/NoOfSteps
     np.random.seed(4)
     Z         = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     S         = np.zeros([NoOfPaths,NoOfSteps+1])
-    
+
     S[:,0]    = s0;
     time = np.zeros([NoOfSteps+1,1])
-    
-    for i in range(0,NoOfSteps):
+
+    for i in range(NoOfSteps):
 
         # This condition is necessary as for t=0 we cannot compute implied
         # volatilities
 
         if time[i]==0.0:
             time[i]=0.0001
-        
+
         print('current time is {0}'.format(time[i]))
 
         # Standarize Normal(0,1)
 
         Z[:,i]=(Z[:,i]-np.mean(Z[:,i]))/np.std(Z[:,i])
-        
+
         # Compute local volatility
 
         S_i = np.array(S[:,i]).reshape([NoOfPaths,1])
         temp = sigmalv2(S_i,time[i])
         sig = np.real(temp)
         np.nan_to_num(sig)
-        
+
         # Because of discretizations we may encouter negative variance which
         # is set to 0 here.
 
         sig=np.maximum(sig,1e-14)
         sigmaLV = np.sqrt(sig)  
-        
+
         # Stock path
 
         S[:,i+1]=S[:,i] * (1.0 + r*dt + sigmaLV.transpose()*Z[:,i]*np.sqrt(dt))
-                       
+
         # We force that at each time S(t)/M(t) is a martingale
 
         S[:,i+1]= S[:,i+1] - np.mean(S[:,i+1]) + s0*np.exp(r*time[i])
-        
+
         # Make sure that after moment matching we don't encounter negative stock values
 
         S[:,i+1]=np.maximum(S[:,i+1],1e-14)
-        
+
         # Adjust time
 
         time[i+1] = time[i] + dt
@@ -217,7 +216,7 @@ def mainCalculation():
         OptPrice[idx] = EUOptionPriceFromMCPaths(CP,S[:,-1],k,T,r)
         IV_Hagan[idx] = sigma([k],T)*100.0
         IV_MC[idx]    = ImpliedVolatility(CP,OptPrice[idx],k,T,s0,r)*100.0
-        
+
     # Plot the option prices
 
     plt.figure(1)
@@ -225,7 +224,7 @@ def mainCalculation():
     plt.grid()
     plt.xlabel('strike')
     plt.ylabel('option price')
-    
+
     # Plot the implied volatilities
 
     plt.figure(2)

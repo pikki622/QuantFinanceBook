@@ -14,20 +14,19 @@ def GeneratePathsPoisson(NoOfPaths,NoOfSteps,T,xiP):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     Xc = np.zeros([NoOfPaths, NoOfSteps+1])
     time = np.zeros([NoOfSteps+1])
-                
+
     dt = T / float(NoOfSteps)
-    
+
     Z = np.random.poisson(xiP*dt,[NoOfPaths,NoOfSteps])
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         X[:,i+1]  = X[:,i] + Z[:,i]
         Xc[:,i+1] = Xc[:,i] -xiP*dt + Z[:,i]
         time[i+1] = time[i] +dt
-        
-    paths = {"time":time,"X":X,"Xcomp":Xc}
-    return paths
+
+    return {"time":time,"X":X,"Xcomp":Xc}
 
 def mainCalculation():
     NoOfPaths = 25

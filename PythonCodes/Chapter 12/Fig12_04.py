@@ -21,43 +21,42 @@ def GeneratePathsHWEuler(NoOfPaths,NoOfSteps,T,P0T, lambd, eta):
 
     # Time step needed for differentiation
 
-    dt = 0.0001    
+    dt = 0.0001
     f0T = lambda t: - (np.log(P0T(t+dt))-np.log(P0T(t-dt)))/(2*dt)
-    
+
     # Initial interest rate is forward rate at time t->0
 
     r0 = f0T(0.00001)
     theta = lambda t: 1.0/lambd * (f0T(t+dt)-f0T(t-dt))/(2.0*dt) + f0T(t) + eta*eta/(2.0*lambd*lambd)*(1.0-np.exp(-2.0*lambd*t))      
-    
+
     #theta = lambda t: 0.1 +t -t
     #print("changed theta")
-    
+
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
     R = np.zeros([NoOfPaths, NoOfSteps+1])
     R[:,0]=r0
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
         # making sure that samples from normal have mean 0 and variance 1
         if NoOfPaths > 1:
             Z[:,i] = (Z[:,i] - np.mean(Z[:,i])) / np.std(Z[:,i])
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
         R[:,i+1] = R[:,i] + lambd*(theta(time[i]) - R[:,i]) * dt + eta* (W[:,i+1]-W[:,i])
         time[i+1] = time[i] +dt
-        
-    # Output
 
-    paths = {"time":time,"R":R}
-    return paths
+    return {"time":time,"R":R}
 
 def HW_theta(lambd,eta,P0T):
-    dt = 0.0001    
+    dt = 0.0001
     f0T = lambda t: - (np.log(P0T(t+dt))-np.log(P0T(t-dt)))/(2*dt)
-    theta = lambda t: 1.0/lambd * (f0T(t+dt)-f0T(t-dt))/(2.0*dt) + f0T(t) + eta*eta/(2.0*lambd*lambd)*(1.0-np.exp(-2.0*lambd*t))
-    #print("CHANGED THETA")
-    return theta#lambda t: 0.1+t-t
+    return (
+        lambda t: 1.0 / lambd * (f0T(t + dt) - f0T(t - dt)) / (2.0 * dt)
+        + f0T(t)
+        + eta * eta / (2.0 * lambd * lambd) * (1.0 - np.exp(-2.0 * lambd * t))
+    )
     
 def HW_A(lambd,eta,P0T,T1,T2):
     tau = T2-T1
@@ -82,7 +81,7 @@ def HWMean_r(P0T,lambd,eta,T):
 
     # Time step needed for differentiation
 
-    dt = 0.0001    
+    dt = 0.0001
     f0T = lambda t: - (np.log(P0T(t+dt))-np.log(P0T(t-dt)))/(2.0*dt)
 
     # Initial interest rate is forward rate at time t->0
@@ -91,26 +90,22 @@ def HWMean_r(P0T,lambd,eta,T):
     theta = HW_theta(lambd,eta,P0T)
     zGrid = np.linspace(0.0,T,2500)
     temp =lambda z: theta(z) * np.exp(-lambd*(T-z))
-    r_mean = r0*np.exp(-lambd*T) + lambd * integrate.trapz(temp(zGrid),zGrid)
-    return r_mean
+    return r0*np.exp(-lambd*T) + lambd * integrate.trapz(temp(zGrid),zGrid)
 
 def HW_r_0(P0T,lambd,eta):
 
     # Time step needed for differentiation
 
-    dt = 0.0001    
+    dt = 0.0001
     f0T = lambda t: - (np.log(P0T(t+dt))-np.log(P0T(t-dt)))/(2*dt)
 
-    # Initial interest rate is forward rate at time t->0
-
-    r0 = f0T(0.00001)
-    return r0
+    return f0T(0.00001)
 
 def HW_Mu_FrwdMeasure(P0T,lambd,eta,T):
 
     # Time step needed for differentiation
 
-    dt = 0.0001    
+    dt = 0.0001
     f0T = lambda t: - (np.log(P0T(t+dt))-np.log(P0T(t-dt)))/(2*dt)
 
     # Initial interest rate is forward rate at time t->0
@@ -118,14 +113,12 @@ def HW_Mu_FrwdMeasure(P0T,lambd,eta,T):
     r0 = f0T(0.00001)
     theta = HW_theta(lambd,eta,P0T)
     zGrid = np.linspace(0.0,T,500)
-    
+
     theta_hat =lambda t,T:  theta(t) + eta*eta / lambd *1.0/lambd * (np.exp(-lambd*(T-t))-1.0)
-    
+
     temp =lambda z: theta_hat(z,T) * np.exp(-lambd*(T-z))
-    
-    r_mean = r0*np.exp(-lambd*T) + lambd * integrate.trapz(temp(zGrid),zGrid)
-    
-    return r_mean
+
+    return r0*np.exp(-lambd*T) + lambd * integrate.trapz(temp(zGrid),zGrid)
 
 def HWVar_r(lambd,eta,T):
     return eta*eta/(2.0*lambd) *( 1.0-np.exp(-2.0*lambd *T))
@@ -209,27 +202,27 @@ def mainCalculation():
     CP= OptionType.CALL
     NoOfPaths = 20000
     NoOfSteps = 1000
-        
+
     lambd     = 0.02
     eta       = 0.02
-    
+
     # We define a ZCB curve (obtained from the market)
 
     P0T = lambda T: np.exp(-0.1*T)#np.exp(-0.03*T*T-0.1*T)
     r0 = HW_r_0(P0T,lambd,eta)
-    
+
     # In this experiment we compare for the ZCB the market and analytic expressions
 
     N = 25
     T_end = 50
     Tgrid= np.linspace(0,T_end,N)
-    
+
     Exact = np.zeros([N,1])
     Proxy= np.zeros ([N,1])
     for i,Ti in enumerate(Tgrid):
         Proxy[i] = HW_ZCB(lambd,eta,P0T,0.0,Ti,r0)
         Exact[i] = P0T(Ti)
-        
+
     plt.figure(1)
     plt.grid()
     plt.plot(Tgrid,Exact,'-k')
@@ -241,18 +234,18 @@ def mainCalculation():
 
     T1 = 4.0
     T2 = 8.0
-    
+
     paths= GeneratePathsHWEuler(NoOfPaths,NoOfSteps,T1 ,P0T, lambd, eta)
     r = paths["R"]
     timeGrid = paths["time"]
     dt = timeGrid[1]-timeGrid[0]
-    
+
     # Here we compare the price of an option on a ZCB from Monte Carlo with the analytic expressions   
 
     M_t = np.zeros([NoOfPaths,NoOfSteps])
-    for i in range(0,NoOfPaths):
+    for i in range(NoOfPaths):
         M_t[i,:] = np.exp(np.cumsum(r[i,:-1])*dt)
-        
+
     KVec = np.linspace(0.01,1.7,50)
     Price_MC_V = np.zeros([len(KVec),1])
     Price_Th_V =np.zeros([len(KVec),1])
@@ -263,7 +256,7 @@ def mainCalculation():
         elif CP==OptionType.PUT:
             Price_MC_V[i] =np.mean( 1.0/M_t[:,-1] * np.maximum(K-P_T1_T2,0.0)) 
         Price_Th_V[i] =HW_ZCB_CallPutPrice(CP,K,lambd,eta,P0T,T1,T2)#HW_ZCB_CallPrice(K,lambd,eta,P0T,T1,T2)
-        
+
     plt.figure(2)
     plt.grid()
     plt.plot(KVec,Price_MC_V)
@@ -277,7 +270,7 @@ def mainCalculation():
 
     frwd = 1.0/(T2-T1) *(P0T(T1)/P0T(T2)-1.0)
     K = np.linspace(frwd/2.0,3.0*frwd,25)
-    
+
     # Effect of eta
 
     plt.figure(3)
@@ -287,21 +280,19 @@ def mainCalculation():
     etaV =[0.01, 0.02, 0.03, 0.04]
     legend = []
     Notional = 1.0
-    for etaTemp in etaV:    
-       optPrice = HW_CapletFloorletPrice(CP,Notional,K,lambd,etaTemp,P0T,T1,T2)
+    for etaTemp in etaV:
+        optPrice = HW_CapletFloorletPrice(CP,Notional,K,lambd,etaTemp,P0T,T1,T2)
 
-       # Implied volatilities
+        # Implied volatilities
 
-       IV =np.zeros([len(K),1])
-       for idx in range(0,len(K)):
-           valCOSFrwd = optPrice[idx]/P0T(T2)/(T2-T1)
-           IV[idx] = ImpliedVolatilityBlack76(CP,valCOSFrwd,K[idx],T2,frwd)
-       plt.plot(K,IV*100.0)
-       #plt.plot(K,optPrice)
-       legend.append('eta={0}'.format(etaTemp))
+        IV =np.zeros([len(K),1])
+        for idx in range(len(K)):
+            valCOSFrwd = optPrice[idx]/P0T(T2)/(T2-T1)
+            IV[idx] = ImpliedVolatilityBlack76(CP,valCOSFrwd,K[idx],T2,frwd)
+        plt.plot(K,IV*100.0)
+        #plt.plot(K,optPrice)
+        legend.append('eta={0}'.format(etaTemp))
     plt.legend(legend)        
-    
-     # Effect of beta
 
     plt.figure(4)
     plt.grid()
@@ -310,18 +301,18 @@ def mainCalculation():
     lambdaV = [0.01, 0.03, 0.05, 0.09]
     legend = []
     Notional = 1.0
-    for lambdTemp in lambdaV:    
-       optPrice = HW_CapletFloorletPrice(CP,Notional,K,lambdTemp,eta,P0T,T1,T2)
+    for lambdTemp in lambdaV:
+        optPrice = HW_CapletFloorletPrice(CP,Notional,K,lambdTemp,eta,P0T,T1,T2)
 
-       # Implied volatilities
+        # Implied volatilities
 
-       IV =np.zeros([len(K),1])
-       for idx in range(0,len(K)):
-           valCOSFrwd = optPrice[idx]/P0T(T2)/(T2-T1)
-           IV[idx] = ImpliedVolatilityBlack76(CP,valCOSFrwd,K[idx],T2,frwd)
-       #plt.plot(K,optPrice)
-       plt.plot(K,IV*100.0)
-       legend.append('lambda={0}'.format(lambdTemp))
+        IV =np.zeros([len(K),1])
+        for idx in range(len(K)):
+            valCOSFrwd = optPrice[idx]/P0T(T2)/(T2-T1)
+            IV[idx] = ImpliedVolatilityBlack76(CP,valCOSFrwd,K[idx],T2,frwd)
+        #plt.plot(K,optPrice)
+        plt.plot(K,IV*100.0)
+        legend.append('lambda={0}'.format(lambdTemp))
     plt.legend(legend)  
 
     print('frwd={0}'.format(frwd*P0T(T2)))

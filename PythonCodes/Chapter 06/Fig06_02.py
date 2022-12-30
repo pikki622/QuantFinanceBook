@@ -11,19 +11,12 @@ def COSDensity(cf,x,N,a,b):
     k = np.linspace(0,N-1,N)
     u = np.zeros([1,N])
     u = k * np.pi / (b-a)
-        
+
     # F_k coefficients
 
     F_k    = 2.0 / (b - a) * np.real(cf(u) * np.exp(-i * u * a));
-    F_k[0] = F_k[0] * 0.5; # adjustment for the first term
-    
-    # Final calculation
-
-    f_X = np.matmul(F_k , np.cos(np.outer(u, x - a )))
-        
-    # We output only the first row
-
-    return f_X
+    F_k[0] = F_k[0] * 0.5
+    return np.matmul(F_k , np.cos(np.outer(u, x - a )))
     
 def mainCalculation():
     i = np.complex(0.0, 1.0) #assigning i=sqrt(-1)

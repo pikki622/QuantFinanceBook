@@ -14,23 +14,23 @@ def GeneratePathsHWEuler(NoOfPaths,NoOfSteps,T,P0T, lambd, eta):
 
     # Time step needed for differentiation
 
-    dt = 0.0001    
+    dt = 0.0001
     f0T = lambda t: - (np.log(P0T(t+dt))-np.log(P0T(t-dt)))/(2*dt)
-    
+
     # Initial interest rate is forward rate at time t->0
 
     r0 = f0T(0.00001)
     theta = lambda t: 1.0/lambd * (f0T(t+dt)-f0T(t-dt))/(2.0*dt) + f0T(t) + \
     eta*eta/(2.0*lambd*lambd)*(1.0-np.exp(-2.0*lambd*t))      
-    
+
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
     R = np.zeros([NoOfPaths, NoOfSteps+1])
     R[:,0]=r0
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -39,11 +39,8 @@ def GeneratePathsHWEuler(NoOfPaths,NoOfSteps,T,P0T, lambd, eta):
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
         R[:,i+1] = R[:,i] + lambd*(theta(time[i]) - R[:,i]) * dt + eta* (W[:,i+1]-W[:,i])
         time[i+1] = time[i] +dt
-        
-    # Output
 
-    paths = {"time":time,"R":R}
-    return paths
+    return {"time":time,"R":R}
 
 def mainCalculation():
     NoOfPaths = 1

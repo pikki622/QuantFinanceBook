@@ -27,8 +27,7 @@ def CIR_PDF_CDF(x,gamma,kappa,t,s,v_bar,v_s):
     lambda_s_t = 4.0 * kappa * np.exp(-kappa * (t-s)) / (np.power(gamma,2.0) * (1.0 - np.exp(-kappa * (t-s)))) * v_s;
     f_X        = 1.0 / c_s_t * st.ncx2.pdf(x/c_s_t,d,lambda_s_t);
     F_X        = st.ncx2.cdf(x/c_s_t,d,lambda_s_t);
-    output = {"pdf":f_X, "cdf":F_X}    
-    return output
+    return {"pdf":f_X, "cdf":F_X}
 
 def Analysis():
 

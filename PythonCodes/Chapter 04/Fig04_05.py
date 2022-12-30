@@ -22,11 +22,11 @@ def GeneratePathsGBM(NoOfPaths,NoOfSteps,T,r,sigma,S_0):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
     time = np.zeros([NoOfSteps+1])
-        
+
     X[:,0] = np.log(S_0)
-    
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -35,12 +35,11 @@ def GeneratePathsGBM(NoOfPaths,NoOfSteps,T,r,sigma,S_0):
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
         X[:,i+1] = X[:,i] + (r - 0.5 * sigma * sigma) * dt + sigma * (W[:,i+1]-W[:,i])
         time[i+1] = time[i] +dt
-        
+
     # Compute exponent of ABM
 
     S = np.exp(X)
-    paths = {"time":time,"S":S}
-    return paths
+    return {"time":time,"S":S}
 
 # Black-Scholes call option price
 
@@ -72,18 +71,18 @@ def mainCalculation():
     r         = 0.05
     sigma     = 0.4
     s0        = 10.0
-         
+
     # Settings for the plots    
 
     KGrid     = np.linspace(s0/100.0,1.5*s0,50)
     timeGrid   = np.linspace(0.02,T-0.02,100)
-    
+
     # Prepare the necessary lambda functions
 
     CallOpt   = lambda t,K : BS_Call_Put_Option_Price(OptionType.CALL,s0,K,sigma,t,T,r)
     dCalldK   = lambda t,K : dCdK(s0,K,sigma,t,T,r)
     d2CalldK2 = lambda t,K : d2CdK2(s0,K,sigma,t,T,r)
-    
+
     # Prepare empty matrices for storing the results
 
     callOptM   = np.zeros([len(timeGrid),len(KGrid)])
@@ -91,14 +90,14 @@ def mainCalculation():
     d2CalldK2M = np.zeros([len(timeGrid),len(KGrid)])
     TM         = np.zeros([len(timeGrid),len(KGrid)])
     KM         = np.zeros([len(timeGrid),len(KGrid)])
-    
-    for i in range(0,len(timeGrid)):
+
+    for i in range(len(timeGrid)):
         TM[i,:]         = timeGrid[i]
         KM[i,:]         = KGrid
         callOptM[i,:]   = CallOpt(timeGrid[i],KGrid).transpose()
         dCalldKM[i,:]   = dCalldK(timeGrid[i],KGrid).transpose()
         d2CalldK2M[i,:]   = d2CalldK2(timeGrid[i],KGrid).transpose()
-        
+
     # Plot the call surface.    
 
     fig = plt.figure(1)
@@ -107,7 +106,7 @@ def mainCalculation():
     plt.xlabel('t')
     plt.ylabel('K')
     plt.title('Call option surface')
-    
+
     # Plot the dCdK surface.    
 
     fig = plt.figure(2)
@@ -116,7 +115,7 @@ def mainCalculation():
     plt.xlabel('t')
     plt.ylabel('K')
     plt.title('dC/dK')
-    
+
     # Plot the d2CdK2 surface.    
 
     fig = plt.figure(3)

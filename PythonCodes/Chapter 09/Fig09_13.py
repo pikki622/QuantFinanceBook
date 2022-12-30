@@ -12,9 +12,9 @@ def GenerateBrownianBridge(NoOfPaths,NoOfSteps,T,a,b,sigma):
     B = np.zeros([NoOfPaths, NoOfSteps+1])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
     t = np.zeros([NoOfSteps+1])
-    B[:,0]=a        
+    B[:,0]=a
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -23,9 +23,8 @@ def GenerateBrownianBridge(NoOfPaths,NoOfSteps,T,a,b,sigma):
         W[:,i+1] = W[:,i] +  np.power(dt, 0.5)*Z[:,i]
         B[:,i+1] = B[:,i] +   (b-B[:,i])/(T -t[i])*dt + sigma*(W[:,i+1]-W[:,i])
         t[i+1] = t[i] +dt
-        
-    paths = {"time":t,"B":B}
-    return paths
+
+    return {"time":t,"B":B}
 
 def mainCalculation():
     NoOfPaths = 6

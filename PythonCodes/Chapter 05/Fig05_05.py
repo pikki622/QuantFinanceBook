@@ -39,9 +39,7 @@ def BS_Call_Option_Price(CP,S_0,K,sigma,tau,r):
 def ImpliedVolatility(CP,marketPrice,K,T,S_0,r,initialVol = 0.4):
     func = lambda sigma: np.power(BS_Call_Option_Price(CP,S_0,K,sigma,T,r) \
                                   - marketPrice, 1.0)
-    impliedVol = optimize.newton(func, initialVol, tol=1e-7)
-    
-    return impliedVol
+    return optimize.newton(func, initialVol, tol=1e-7)
 
 def MertonCallPrice(CP,S0,K,r,tau,muJ,sigmaJ,sigma,xiP):
     X0  = np.log(S0)
@@ -76,7 +74,7 @@ def mainCalculation():
     S0  = 100
     r   = 0.0
     tau = 2
-    
+
     K = np.linspace(40,180,25)
     K = np.array(K).reshape([len(K),1])
 
@@ -84,7 +82,7 @@ def mainCalculation():
     muJ    = 0.0
     sigmaJ = 0.2
     xiP    = 0.1
-     
+
     # Effect of sigmaJ
 
     plt.figure(1)
@@ -93,22 +91,20 @@ def mainCalculation():
     plt.ylabel('implied volatility')
     sigmaJV =[0.0, 0.1, 0.2, 0.3, 0.4]
     legend = []
-    for sigmaJtemp in sigmaJV:    
+    for sigmaJtemp in sigmaJV:
 
         # Evaluate the Merton model
 
         valueExact = MertonCallPrice(CP,S0,K,r,tau,muJ,sigmaJtemp,sigma,xiP)
-        
+
         # Implied volatilities
 
         IV =np.zeros([len(K),1])
-        for idx in range(0,len(K)):
+        for idx in range(len(K)):
             IV[idx] = ImpliedVolatility(CP,valueExact[idx],K[idx],tau,S0,r)
         plt.plot(K,IV)
         legend.append('sigma_J={0}'.format(sigmaJtemp))
     plt.legend(legend)
-    
-      # Effect of xi_P
 
     plt.figure(2)
     plt.grid()
@@ -118,24 +114,22 @@ def mainCalculation():
     #muJ    = 0.0
     xiPV   = [0.0, 0.25, 0.5, 0.75, 1.0]
     legend = []
-    for xiPtemp in xiPV:    
+    for xiPtemp in xiPV:
 
         # Evaluate the Merton model
 
         valueExact = MertonCallPrice(CP,S0,K,r,tau,muJ,sigmaJ,sigma,xiPtemp)
-        
+
         # Implied volatilities
 
         IV =np.zeros([len(K),1])
-        for idx in range(0,len(K)):
+        for idx in range(len(K)):
             IV[idx] = ImpliedVolatility(CP,valueExact[idx],K[idx],tau,S0,r,0.3)
-        
+
         #plt.figure()
         plt.plot(K,IV)
         legend.append('xiP={0}'.format(xiPtemp))
     plt.legend(legend)
-    
-     # Effect of mu_J
 
     plt.figure(3)
     plt.grid()
@@ -145,16 +139,16 @@ def mainCalculation():
     #xiP    = 0.5
     muJV = [-0.25, -0.05, 0.1, 0.25, 0.4]
     legend = []
-    for muJtemp in muJV:    
+    for muJtemp in muJV:
 
         # Evaluate the Merton model
 
         valueExact = MertonCallPrice(CP,S0,K,r,tau,muJtemp,sigmaJ,sigma,xiP)
-        
+
         # Implied volatilities
 
         IV =np.zeros([len(K),1])
-        for idx in range(0,len(K)):
+        for idx in range(len(K)):
             IV[idx] = ImpliedVolatility(CP,valueExact[idx],K[idx],tau,S0,r)
         plt.plot(K,IV)
         legend.append('mu_J={0}'.format(muJtemp))

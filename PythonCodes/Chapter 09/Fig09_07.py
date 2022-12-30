@@ -22,71 +22,65 @@ class OptionType(enum.Enum):
 def GeneratePathsGBMEuler(NoOfPaths,NoOfSteps,T,r,sigma,S_0):    
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
-   
+
     # Approximation
 
     S1 = np.zeros([NoOfPaths, NoOfSteps+1])
     S1[:,0] =S_0
-    
+
     # Exact
 
     S2 = np.zeros([NoOfPaths, NoOfSteps+1])
     S2[:,0] =S_0
-    
+
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         if NoOfPaths > 1:
             Z[:,i] = (Z[:,i] - np.mean(Z[:,i])) / np.std(Z[:,i])
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
-        
+
         S1[:,i+1] = S1[:,i] + r * S1[:,i]* dt + sigma * S1[:,i] * (W[:,i+1] - W[:,i])
         S2[:,i+1] = S2[:,i] * np.exp((r - 0.5*sigma*sigma) *dt + sigma * (W[:,i+1] - W[:,i]))
         time[i+1] = time[i] +dt
-        
-    # Return S1 and S2
 
-    paths = {"time":time,"S1":S1,"S2":S2}
-    return paths
+    return {"time":time,"S1":S1,"S2":S2}
 
 def GeneratePathsGBMMilstein(NoOfPaths,NoOfSteps,T,r,sigma,S_0):    
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
-   
+
     # Approximation
 
     S1 = np.zeros([NoOfPaths, NoOfSteps+1])
     S1[:,0] =S_0
-    
+
     # Exact
 
     S2 = np.zeros([NoOfPaths, NoOfSteps+1])
     S2[:,0] =S_0
-    
+
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         if NoOfPaths > 1:
             Z[:,i] = (Z[:,i] - np.mean(Z[:,i])) / np.std(Z[:,i])
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
-        
+
         S1[:,i+1] = S1[:,i] + r * S1[:,i]* dt + sigma * S1[:,i] * (W[:,i+1] - W[:,i]) \
                     + 0.5 * sigma * sigma * S1[:,i] * (np.power(W[:,i+1] - W[:,i],2.0) - dt)
         S2[:,i+1] = S2[:,i] * np.exp((r - 0.5*sigma*sigma) *dt + sigma * (W[:,i+1] - W[:,i]))
         time[i+1] = time[i] +dt
-        
-    # Return S1 and S2
 
-    paths = {"time":time,"S1":S1,"S2":S2}
-    return paths
+    return {"time":time,"S1":S1,"S2":S2}
 
 def mainCalculation():
     NoOfSteps = 25

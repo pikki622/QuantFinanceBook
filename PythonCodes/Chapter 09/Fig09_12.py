@@ -24,15 +24,13 @@ def CIRCDF(kappa,gamma,vbar,s,t,v_s):
     delta = 4.0 *kappa*vbar/gamma/gamma
     c= 1.0/(4.0*kappa)*gamma*gamma*(1.0-np.exp(-kappa*(t-s)))
     kappaBar = 4.0*kappa*v_s*np.exp(-kappa*(t-s))/(gamma*gamma*(1.0-np.exp(-kappa*(t-s))))
-    cdf =lambda x: st.ncx2.cdf(x/c,delta,kappaBar)
-    return cdf
+    return lambda x: st.ncx2.cdf(x/c,delta,kappaBar)
 
 def CIRDensity(kappa,gamma,vbar,s,t,v_s):
     delta = 4.0 *kappa*vbar/gamma/gamma
     c= 1.0/(4.0*kappa)*gamma*gamma*(1.0-np.exp(-kappa*(t-s)))
     kappaBar = 4.0*kappa*v_s*np.exp(-kappa*(t-s))/(gamma*gamma*(1.0-np.exp(-kappa*(t-s))))
-    ncx2PDF = lambda x : 1.0/c * st.ncx2.pdf(x/c,delta,kappaBar)
-    return ncx2PDF
+    return lambda x : 1.0/c * st.ncx2.pdf(x/c,delta,kappaBar)
 
 def CIRMean(kappa,gamma,vbar,s,t,v_s):
     delta = 4.0 *kappa*vbar/gamma/gamma
@@ -44,8 +42,7 @@ def CIRVar(kappa,gamma,vbar,s,t,v_s):
     delta = 4.0 *kappa*vbar/gamma/gamma
     c= 1.0/(4.0*kappa)*gamma*gamma*(1.0-np.exp(-kappa*(t-s)))
     kappaBar = 4.0*kappa*v_s*np.exp(-kappa*(t-s))/(gamma*gamma*(1.0-np.exp(-kappa*(t-s))))
-    VarV = c*c*(2.0*delta+4.0*kappaBar)
-    return VarV
+    return c*c*(2.0*delta+4.0*kappaBar)
 
 def mainCalculation():
 

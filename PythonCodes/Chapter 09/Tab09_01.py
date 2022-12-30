@@ -35,30 +35,27 @@ def BS_Call_Option_Price(CP,S_0,K,sigma,tau,r):
 def GeneratePathsGBMEuler(NoOfPaths,NoOfSteps,T,r,sigma,S_0):    
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
-   
+
     # Euler approximation
 
     S1 = np.zeros([NoOfPaths, NoOfSteps+1])
     S1[:,0] =S_0
-    
+
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         if NoOfPaths > 1:
             Z[:,i] = (Z[:,i] - np.mean(Z[:,i])) / np.std(Z[:,i])
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
-        
+
         S1[:,i+1] = S1[:,i] + r * S1[:,i]* dt + sigma * S1[:,i] * (W[:,i+1] - W[:,i])
         time[i+1] = time[i] +dt
-        
-    # Return S1 and S2
 
-    paths = {"time":time,"S":S1}
-    return paths
+    return {"time":time,"S":S1}
 
 def BS_Cash_Or_Nothing_Price(CP,S_0,K,sigma,tau,r):
 
@@ -77,31 +74,28 @@ def BS_Cash_Or_Nothing_Price(CP,S_0,K,sigma,tau,r):
 def GeneratePathsGBMMilstein(NoOfPaths,NoOfSteps,T,r,sigma,S_0):    
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
-   
+
     # Milstein approximation
 
     S1 = np.zeros([NoOfPaths, NoOfSteps+1])
     S1[:,0] =S_0
-       
+
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         if NoOfPaths > 1:
             Z[:,i] = (Z[:,i] - np.mean(Z[:,i])) / np.std(Z[:,i])
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
-        
+
         S1[:,i+1] = S1[:,i] + r * S1[:,i]* dt + sigma * S1[:,i] * (W[:,i+1] - W[:,i]) \
                     + 0.5 * sigma * sigma * S1[:,i] * (np.power((W[:,i+1] - W[:,i]),2) - dt)
         time[i+1] = time[i] +dt
-        
-    # Return S1 and S2
 
-    paths = {"time":time,"S":S1}
-    return paths
+    return {"time":time,"S":S1}
 
 def EUOptionPriceFromMCPaths(CP,S,K,T,r):
 

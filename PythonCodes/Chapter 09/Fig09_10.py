@@ -13,9 +13,9 @@ def GeneratePathsJacobi(NoOfPaths,NoOfSteps,T,rho0,kappa,gamma,mu):
     Rho = np.zeros([NoOfPaths, NoOfSteps+1])
     Rho[:,0]=rho0
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -23,17 +23,14 @@ def GeneratePathsJacobi(NoOfPaths,NoOfSteps,T,rho0,kappa,gamma,mu):
             Z[:,i] = (Z[:,i] - np.mean(Z[:,i])) / np.std(Z[:,i])
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
         Rho[:,i+1] = Rho[:,i] + kappa*(mu - Rho[:,i]) * dt + gamma* np.sqrt(1.0 -Rho[:,i]*Rho[:,i]) * (W[:,i+1]-W[:,i])
-        
+
         # Handling of the boundary conditions to ensure paths stay within the [-1,1] range
 
         Rho[:,i+1] = np.maximum(Rho[:,i+1],-1.0)
         Rho[:,i+1] = np.minimum(Rho[:,i+1],1.0)
         time[i+1] = time[i] +dt
-        
-    # Output
 
-    paths = {"time":time,"Rho":Rho}
-    return paths
+    return {"time":time,"Rho":Rho}
 
 def mainCalculation():
     NoOfPaths = 15
@@ -44,20 +41,20 @@ def mainCalculation():
     kappa     = 0.1
     gamma     = 0.6
     mu        = 0.5
-    
+
     # Check the boundaries:
 
-    if kappa > np.max([gamma*gamma/(1.0-mu),gamma*gamma/(1.0+mu)]):
+    if kappa > np.max([gamma**2 / (1.0 - mu), gamma**2 / (1.0 + mu)]):
         print("Boundry is NOT attainable")
     else:
         print("Boundry is attainable")
-        
-    Paths = GeneratePathsJacobi(NoOfPaths,NoOfSteps,T,rho0,kappa,gamma,mu)   
+
+    Paths = GeneratePathsJacobi(NoOfPaths,NoOfSteps,T,rho0,kappa,gamma,mu)
     timeGrid = Paths["time"]
     Rho = Paths["Rho"]
-    
+
     plt.figure(1)
-    plt.plot(timeGrid, np.transpose(Rho),'b')   
+    plt.plot(timeGrid, np.transpose(Rho),'b')
     plt.grid()
     plt.xlabel("time")
     plt.ylabel("Rho(t)")

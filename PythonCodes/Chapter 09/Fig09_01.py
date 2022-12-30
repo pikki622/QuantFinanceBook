@@ -14,8 +14,8 @@ def GenerateMonteCarloPaths(NoOfPaths,NoOfSteps,T,g):
     X = np.zeros([NoOfPaths, NoOfSteps+1])
 
     dt = T / float(NoOfSteps)
-    t = 0 
-    for i in range(0,NoOfSteps):
+    t = 0
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 

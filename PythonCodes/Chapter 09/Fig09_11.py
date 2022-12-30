@@ -18,9 +18,9 @@ def GeneratePathsCIREuler2Schemes(NoOfPaths,NoOfSteps,T,kappa,v0,vbar,gamma):
     V1[:,0]=v0
     V2[:,0]=v0
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -32,17 +32,14 @@ def GeneratePathsCIREuler2Schemes(NoOfPaths,NoOfSteps,T,kappa,v0,vbar,gamma):
 
         V1[:,i+1] = V1[:,i] + kappa*(vbar - V1[:,i]) * dt + gamma* np.sqrt(V1[:,i]) * (W[:,i+1]-W[:,i])
         V1[:,i+1] = np.maximum(V1[:,i+1],0.0)
-        
+
         # Reflecting boundary condition
 
         V2[:,i+1] = V2[:,i] + kappa*(vbar - V2[:,i]) * dt + gamma* np.sqrt(V2[:,i]) * (W[:,i+1]-W[:,i])
         V2[:,i+1] = np.absolute(V2[:,i+1])
         time[i+1] = time[i] +dt
-        
-    # Outputs
 
-    paths = {"time":time,"Vtruncated":V1,"Vreflected":V2}
-    return paths
+    return {"time":time,"Vtruncated":V1,"Vreflected":V2}
 
 def mainCalculation():
     np.random.seed(15)

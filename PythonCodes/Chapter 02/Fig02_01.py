@@ -13,9 +13,9 @@ def ComputeIntegrals(NoOfPaths,NoOfSteps,T):
     I1 = np.zeros([NoOfPaths, NoOfSteps+1])
     I2 = np.zeros([NoOfPaths, NoOfSteps+1])
     time = np.zeros([NoOfSteps+1])
-    
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
@@ -25,9 +25,8 @@ def ComputeIntegrals(NoOfPaths,NoOfSteps,T):
         I1[:,i+1] = I1[:,i] + W[:,i]*dt
         I2[:,i+1] = I2[:,i] + W[:,i]*(W[:,i+1]-W[:,i])
         time[i+1] = time[i] +dt
-        
-    paths = {"time":time,"W":W,"I1":I1,"I2":I2}
-    return paths
+
+    return {"time":time,"W":W,"I1":I1,"I2":I2}
 
 NoOfPaths = 1
 NoOfSteps = 1000

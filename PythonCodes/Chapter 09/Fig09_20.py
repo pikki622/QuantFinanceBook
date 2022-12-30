@@ -53,33 +53,30 @@ def BS_Vega(S_0,K,sigma,t,T,r):
 def GeneratePathsGBMEuler(NoOfPaths,NoOfSteps,T,r,sigma,S_0):    
     Z = np.random.normal(0.0,1.0,[NoOfPaths,NoOfSteps])
     W = np.zeros([NoOfPaths, NoOfSteps+1])
-   
+
     # Approximation
 
     S = np.zeros([NoOfPaths, NoOfSteps+1])
     S[:,0] =S_0
-    
+
     X = np.zeros([NoOfPaths, NoOfSteps+1])
     X[:,0] =np.log(S_0)
-      
+
     time = np.zeros([NoOfSteps+1])
-        
+
     dt = T / float(NoOfSteps)
-    for i in range(0,NoOfSteps):
+    for i in range(NoOfSteps):
 
         # Making sure that samples from a normal have mean 0 and variance 1
 
         if NoOfPaths > 1:
             Z[:,i] = (Z[:,i] - np.mean(Z[:,i])) / np.std(Z[:,i])
         W[:,i+1] = W[:,i] + np.power(dt, 0.5)*Z[:,i]
-        
+
         X[:,i+1] = X[:,i] + (r -0.5*sigma**2.0)* dt + sigma * (W[:,i+1] - W[:,i])
         time[i+1] = time[i] +dt
-        
-    # Return S
 
-    paths = {"time":time,"S":np.exp(X)}
-    return paths
+    return {"time":time,"S":np.exp(X)}
 
 def EUOptionPriceFromMCPathsGeneralized(CP,S,K,T,r):
 
@@ -106,14 +103,12 @@ def PathwiseVega(S0,S,sigma,K,r,T):
 def LikelihoodDelta(S0,S,K,r,T,sigma):
     temp1 = 1.0/(S0*sigma**2.0*T)*np.maximum(S[:,-1]-K,0)
     beta = np.log(S[:,-1]/S0)-(r-0.5*sigma**2.0)*T
-    delta = np.exp(-r*T)*np.mean(temp1*beta)
-    return delta
+    return np.exp(-r*T)*np.mean(temp1*beta)
     
 def LikelihoodVega(S0,S,K,r,T,sigma):
     beta = np.log(S[:,-1]/S0)-(r-0.5*sigma**2.0)*T
     temp1 = -1.0/sigma + 1.0/(np.power(sigma,3.0)*T)*(beta**2.0)-(1.0/sigma)*beta
-    vega = np.exp(-r*T)*np.mean(np.maximum(S[:,-1]-K,0)*temp1)
-    return vega
+    return np.exp(-r*T)*np.mean(np.maximum(S[:,-1]-K,0)*temp1)
 
 def mainCalculation():
     CP        = OptionType.CALL
